@@ -277,7 +277,7 @@ h3{font-size:14px;font-weight:700;color:var(--ink)}
 .days div{display:grid;gap:4px;justify-items:center;align-content:end;height:100%;font-size:11px;color:var(--ink-3)}
 .days i{display:block;width:100%;max-width:26px;background:var(--badge);border-radius:6px 6px 2px 2px;min-height:3px}
 .days i.z{background:var(--line)}
-.boxes{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;align-items:end;height:84px}
+.boxes{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;align-items:end;height:84px}
 .boxes div{display:grid;gap:3px;justify-items:center;align-content:end;height:100%;font-size:10px;color:var(--ink-3);text-align:center;line-height:1.2}
 .boxes i{display:block;width:100%;background:var(--indigo);border-radius:6px 6px 2px 2px;min-height:2px;opacity:calc(.35 + var(--k)*.65)}
 .gradebar{display:grid;grid-template-columns:52px 1fr 76px;gap:10px;align-items:center;font-size:13px}
@@ -614,7 +614,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 /* ============ spaced repetition ============ */
 /* item: [box, dueMin, nCorrect, nWrong, lastMin, maxBox]
-   box 0 5분 · 1 1일 · 2 3일 · 3 7일 · 4 15일 · 5 30일 · 6 90일 · 7 180일(복습 끝)
+   box 0 (예비) · 1 1일 · 2 3일 · 3 7일 · 4 15일 · 5 30일 · 6 90일 · 7 180일(복습 끝)
    갓 배운 0-1, 아직 서툰 2-3, 숙달 4-5, 매우 숙달 6-7 */
 const IV = [5, 1440, 4320, 10080, 21600, 43200, 129600, 259200];
 const BOXN = ['5분', '1일', '3일', '7일', '15일', '30일', '90일', '끝'];
@@ -637,7 +637,7 @@ function recordAnswer(q, ok, hinted) {
       else if (hinted) it[0] = Math.min(it[0] + 1, 3); // 힌트 도움: 7일까지만
       else it[0] = Math.min(7, it[0] + (it[0] >= 4 ? 1 : 2) + (it[3] === 0 && it[0] >= 2 ? 1 : 0)); // 실수 없이 이어가면 한 칸 더
       it[2]++;
-    } else { it[0] = 0; it[3]++; }
+    } else { it[0] = 1; it[3]++; }                 // 틀리면 (오래전에 익힌 글자라도) 내일 다시
     it[1] = now + IV[it[0]]; it[4] = now; it[5] = Math.max(it[5] || 0, it[0]); S.items[key] = it; cloud.dirty.add('it' + shardOf(key));
     // 나의 한자력 레벨: 처음 보는 글자를 맞히면 그 글자 레벨 쪽으로, 틀리면 아래로
     if (key[0] === 'c' && !was && Q.mode !== 'level') {
@@ -1169,7 +1169,12 @@ function finish(ok, skipped) {
     Q.total++; if (ok) Q.right++;
     const bt = Q.byType[q.type] || (Q.byType[q.type] = [0, 0]); bt[1]++; if (ok) bt[0]++;
     if (Q.mode !== 'level') recordAnswer(q, ok, Q.hinted);
-    if (!ok) { Q.wrong.push(q); if (Q.mode === 'today' || Q.mode === 'type' || Q.mode === 'review') { const r = Object.assign({}, q, { retry: true }); if (r.mode === 'choice') r.choices = shuffle(r.choices); Q.list.push(r); } }
+    if (!ok) Q.wrong.push(q);
+  }
+  // 틀린 문제는 맞힐 때까지 이 학습 안에서 다시 나온다 (몇 문제 뒤에 끼워 넣음)
+  if (!ok && (Q.mode === 'today' || Q.mode === 'type' || Q.mode === 'review')) {
+    const r = Object.assign({}, q, { retry: true }); if (r.mode === 'choice') r.choices = shuffle(r.choices);
+    const at = Math.min(Q.list.length, Q.i + 3 + Math.floor(Math.random() * 3)); Q.list.splice(at, 0, r);
   }
   Q.combo = ok ? Q.combo + 1 : 0; Q.best = Math.max(Q.best, Q.combo);
   if (Q.opts.onAnswer) Q.opts.onAnswer(q, ok);
@@ -1181,7 +1186,7 @@ function finish(ok, skipped) {
   const fb = $('#q-fb'); if (fb.scrollIntoView) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function overrideOk() {
-  const q = Q.q; Q.right++; Q.byType[q.type][0]++; Q.wrong = Q.wrong.filter(w => w !== q); const idx = Q.list.findIndex(r => r.retry && r.id === q.id); if (idx > Q.i) Q.list.splice(idx, 1);
+  const q = Q.q; Q.right++; Q.byType[q.type][0]++; Q.wrong = Q.wrong.filter(w => w !== q); const idx = Q.list.findIndex((r, k) => k > Q.i && r.retry && r.id === q.id); if (idx > Q.i) Q.list.splice(idx, 1);
   recordAnswer(q, true, Q.hinted); const d = S.days[dayKey()]; d[0]--; const t = S.types[q.type]; t[1]--; S.xp -= 2; Q.combo = 1;
   $('#q-fb').innerHTML = `<div class="fb ok"><div class="fb-h"><span class="verdict">正</span>정답으로 처리했습니다</div>${q.explain()}</div>`;
 }
@@ -1578,11 +1583,11 @@ function viewDict(st) {
 function viewReview(st) {
   const due = dueKeys(st); const cs = stageChars(st); const boxes = [0, 0, 0, 0, 0, 0, 0, 0];
   for (const x of cs) { const b = boxOf('c' + x.c); if (b >= 0) boxes[b]++; }
-  const mx = Math.max(1, ...boxes);
+  const mx = Math.max(1, ...boxes.slice(1));
   return `<div class="stack">
-  <div class="card stack" style="gap:12px"><div><h2>앗, 뭐였지? — 잊기 전에 복습</h2><p class="small muted">처음 보고 바로 맞힌 글자는 30일 뒤에 한 번만 확인합니다. 그 밖에는 1일 → 3일 → 7일 → 15일 → 30일 → 90일로 멀어지고, 90일 뒤에도 맞히면 복습이 끝납니다. 틀리면 5분 뒤로 돌아갑니다.</p></div>
+  <div class="card stack" style="gap:12px"><div><h2>앗, 뭐였지? — 잊기 전에 복습</h2><p class="small muted">처음 보고 바로 맞힌 글자는 30일 뒤에 한 번만 확인합니다. 그 밖에는 1일 → 3일 → 7일 → 15일 → 30일 → 90일로 멀어지고, 90일 뒤에도 맞히면 복습이 끝납니다. 틀리면 익힌 지 오래된 글자라도 내일 다시 나오고, 그 학습 안에서는 맞힐 때까지 반복됩니다.</p></div>
     <div class="row"><div class="grow"><b class="num" style="font-size:28px;font-weight:600">${due.length}</b> <span class="muted">자가 복습을 기다립니다</span></div><button class="btn" data-go="review" ${due.length ? '' : 'disabled'}>복습 시작</button></div>
-    <div><h3 style="margin-bottom:8px">다음 복습까지 · ${st.id}</h3><div class="boxes">${boxes.map((n, i) => `<div><span class="num">${n || ''}</span><i style="height:${Math.round(56 * n / mx)}px;--k:${(i + 1) / 8}"></i>${BOXN[i]}</div>`).join('')}</div><p class="small muted" style="margin-top:6px">갓 배운 ${boxes[0] + boxes[1]} · 아직 서툰 ${boxes[2] + boxes[3]} · 숙달된 ${boxes[4] + boxes[5]} · 매우 숙달된 ${boxes[6] + boxes[7]}</p></div></div>
+    <div><h3 style="margin-bottom:8px">다음 복습까지 · ${st.id}</h3><div class="boxes">${boxes.slice(1).map((n, i) => `<div><span class="num">${n || ''}</span><i style="height:${Math.round(56 * n / mx)}px;--k:${(i + 2) / 8}"></i>${BOXN[i + 1]}</div>`).join('')}</div><p class="small muted" style="margin-top:6px">갓 배운 ${boxes[0] + boxes[1]} · 아직 서툰 ${boxes[2] + boxes[3]} · 숙달된 ${boxes[4] + boxes[5]} · 매우 숙달된 ${boxes[6] + boxes[7]}</p></div></div>
   <div class="card"><div class="row" style="margin-bottom:4px"><h2 class="grow">오답 노트 <span class="muted num" style="font-weight:400">${S.wrong.length}</span></h2>${S.wrong.length ? '<button class="btn sm" data-go="rewrong">다시 풀기</button>' : ''}</div>
   ${S.wrong.length ? S.wrong.slice(0, 60).map(w => `<div class="wrongitem"><div class="t">${TYPES[w.t] ? TYPES[w.t].n : ''}</div><div class="s">${hjs(w.s)}</div><div class="small">정답 <b class="han" style="font-size:16px">${esc(w.a)}</b></div></div>`).join('') : '<div class="empty">틀린 문제가 여기에 모입니다. 다시 맞히면 사라집니다.</div>'}</div></div>`;
 }
