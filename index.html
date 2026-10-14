@@ -421,6 +421,11 @@ h3{font-size:14px;font-weight:700;color:var(--ink)}
 .wp-cell.ok{border-color:var(--ok)} .wp-cell.no{border-color:var(--bad)} .wp-cell.no .rec b{color:var(--bad);opacity:.35}
 .wrongitem[data-hj]{text-align:left}
 .cta .btn.ghost{min-width:72px;white-space:nowrap;padding:0 14px}
+/* review interval chips */
+.ivs{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ivs.sheet{margin-top:8px}
+.iv{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+.iv.on{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
 body{-webkit-user-select:none;user-select:none;overscroll-behavior:none}input{-webkit-user-select:text;user-select:text}</style></head><body><div id="app">
   <header class="top">
     <div class="brand"><b>먹빛 한자</b></div>
@@ -700,6 +705,25 @@ function seenTag(q) {
 function setMemo(c, text) { text = (text || '').trim(); if (text) S.memo[c] = text; else delete S.memo[c]; touch('meta'); }
 function todayRec() { const d = S.days[dayKey()] || [0, 0, 0, 0, 0, 0, 0]; while (d.length < 7) d.push(0); return d; }
 function fmtSecs(s) { s = Math.round(s || 0); if (s < 60) return s + '초'; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + '시간 ' : '') + m + '분' + (h ? '' : ' ' + (s % 60) + '초'); }
+
+/* manual review interval: box 1..7 (1일 … 끝) */
+function setInterval_(key, box) {
+  const now = nowMin(); const it = S.items[key] || [0, 0, 0, 0, now, 0];
+  it[0] = box; it[1] = now + IV[box]; it[5] = Math.max(it[5] || 0, box); S.items[key] = it; cloud.dirty.add('it' + shardOf(key)); touch('meta');
+}
+function intervalChips(keys, cls) {
+  const key = keys[0]; const it = S.items[key]; const cur = it ? it[0] : -1;
+  const labs = ['', '내일', '3일', '7일', '15일', '30일', '90일', '끝'];
+  return `<div class="ivs ${cls || ''}"><span class="small muted">다음 복습</span>${[1, 2, 3, 4, 5, 6, 7].map(b => `<button class="iv${b === cur ? ' on' : ''}" data-iv="${b}" data-ivkeys="${esc(keys.join(','))}">${labs[b]}</button>`).join('')}</div>`;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-iv]'); if (!t) return;
+  const keys = t.dataset.ivkeys.split(','); keys.forEach(k => setInterval_(k, +t.dataset.iv));
+  t.parentNode.querySelectorAll('.iv').forEach(b => b.classList.toggle('on', b === t));
+  toast(t.textContent === '끝' ? '복습 목록에서 뺐습니다' : '다음 복습을 ' + t.textContent + ' 뒤로 정했습니다');
+  if (Q.on && Q.q) { const idx = Q.list.findIndex((r, k) => k > Q.i && r.retry && r.id === Q.q.id); if (idx > 0) Q.list.splice(idx, 1); }   // 직접 정했으면 이번 학습에서 또 묻지 않음
+  if (!Q.on && typeof render === 'function') render();
+});
 
 /* ============ handwriting recognition (offline, template matching on stroke shapes) ============ */
 const HW = { t: null, loading: null };
@@ -1181,7 +1205,7 @@ function finish(ok, skipped) {
   saveSession();
   if (Q.mode === 'mock' || Q.mode === 'level') return nextQ();
   const soft = !ok && !skipped && q.soft && q.mode === 'text';
-  $('#q-fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><div class="fb-h"><span class="verdict">${ok ? '正' : '誤'}</span>${ok ? (Q.combo >= 3 ? Q.combo + '연속 정답' : '정답') : (skipped ? '정답을 확인하세요' : '아쉬워요')}</div>${q.explain()}${memoNote(q)}${soft ? '<button class="btn sm ghost" data-act="override">내 답도 맞아요</button>' : ''}</div>`;
+  $('#q-fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><div class="fb-h"><span class="verdict">${ok ? '正' : '誤'}</span>${ok ? (Q.combo >= 3 ? Q.combo + '연속 정답' : '정답') : (skipped ? '정답을 확인하세요' : '아쉬워요')}</div>${q.explain()}${memoNote(q)}${Q.mode !== 'mock' && q.keys[0][0] === 'c' ? intervalChips(q.keys.filter(k => k[0] === 'c')) : ''}${soft ? '<button class="btn sm ghost" data-act="override">내 답도 맞아요</button>' : ''}</div>`;
   footer();
   const fb = $('#q-fb'); if (fb.scrollIntoView) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -1462,7 +1486,7 @@ function renderSheet() {
     const ERAS = [['o', '갑골문', '상나라'], ['b', '금문', '주나라'], ['s', '소전', '진나라'], ['k', '해서', '오늘날']];
     const has = x.o || ''; const eras = ERAS.filter(e => e[0] === 'k' || has.includes(e[0])); const lack = ERAS.filter(e => e[0] !== 'k' && !has.includes(e[0])).map(e => e[1]);
     body = `<div class="hero"><div class="big">${x.c}</div><div><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><h2 class="grow">${esc(hmStr(x))}</h2><button class="memobtn${S.memo[x.c] ? ' on' : ''}" data-sh="memo" aria-label="메모">${S.memo[x.c] ? '✎ 메모' : '+ 메모'}</button></div>
-      <div class="facts"><span>${stampFor(x.g)}</span><span>레벨 <b class="num">${x.l}</b></span><span>부수 <b class="han">${esc(ri.shown)}</b> ${esc(ri.name)}${ri.alias ? ' · ' + esc(ri.alias) : ''}</span><span>총 <b class="num">${x.n}</b>획 <span class="muted">(부수 ${x.n - x.x} + ${x.x})</span></span>${x.a ? `<span>약자 <b class="han">${esc(x.a)}</b></span>` : ''}</div></div></div>
+      <div class="facts"><span>${stampFor(x.g)}</span><span>레벨 <b class="num">${x.l}</b></span><span>부수 <b class="han">${esc(ri.shown)}</b> ${esc(ri.name)}${ri.alias ? ' · ' + esc(ri.alias) : ''}</span><span>총 <b class="num">${x.n}</b>획 <span class="muted">(부수 ${x.n - x.x} + ${x.x})</span></span></div>${S.items['c' + x.c] ? intervalChips(['c' + x.c], 'sheet') : ''}<div class="facts" hidden>${x.a ? `<span>약자 <b class="han">${esc(x.a)}</b></span>` : ''}</div></div></div>
     <div class="memo" id="memo-box"${S.memo[x.c] || Sheet.memoOpen ? '' : ' hidden'}><label class="small muted" for="memo-ta">내 메모 · 이 글자를 외우는 나만의 방법</label><textarea id="memo-ta" rows="3" placeholder="예: 木에 交를 더해 '학교'. 나무 아래서 사귄다">${esc(S.memo[x.c] || '')}</textarea><div class="row" style="justify-content:flex-end"><button class="btn sm quiet" data-sh="memodel">지우기</button><button class="btn sm" data-sh="memosave">저장</button></div></div>
     <div class="sec"><h3>자원 · 글자가 걸어온 길</h3><div class="evo" style="--n:${eras.length}">${eras.map(([k, n, era], i) => `<figure><div class="tile" data-era="${k}">${k === 'k' ? `<span class="han kai">${x.c}</span>` : ''}</div><figcaption>${n}<small>${era}</small></figcaption></figure>`).join('')}</div>${lack.length ? `<p class="small muted">${lack.join('·')} 자형은 전하지 않거나 이 앱에 실려 있지 않습니다.</p>` : ''}
       ${x.e ? `<p class="why"><span class="badge">${esc(x.e[0])}</span>${esc(x.e[1])}</p>` : '<p class="muted small">자원 풀이가 아직 없습니다.</p>'}</div>
