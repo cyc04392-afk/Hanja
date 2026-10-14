@@ -378,6 +378,49 @@ h3{font-size:14px;font-weight:700;color:var(--ink)}
 :root[data-theme="dark"] .hint{background:#4A2A33;color:#F6C9D3}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .hint{background:#4A2A33;color:#F6C9D3} }
 .wrongitem .row .t{margin-bottom:0}
+/* ---------- home v3: streak card, mascot panel with side column ---------- */
+.streak{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 14px;margin-bottom:10px}
+.streak .flame{font-size:26px;line-height:1}
+.streak b{font-size:15px;font-weight:800}
+.streak .att{justify-content:flex-start;margin-top:4px}
+.streak .att span{width:26px;height:26px;font-size:10px} .streak .att span svg{width:26px;height:26px}
+.panel2{position:relative;background:var(--sunk);border-radius:24px;padding:14px 14px 40px;display:grid;grid-template-columns:1fr auto;gap:8px 10px;overflow:hidden}
+.panel2 .ribbon{position:absolute;left:14px;top:0;background:#F6C453;color:#5A3E00;border-radius:0 0 10px 10px;padding:6px 8px 8px;display:grid;justify-items:center;gap:2px;font-size:12px;font-weight:800}
+.panel2 .ribbon svg{width:22px;height:22px}
+.panel2 .mascot.big{width:min(62%,190px);justify-self:center;align-self:center;margin-top:28px}
+.panel2 .side{display:grid;gap:8px;align-content:start}
+.sb{width:66px;height:62px;border-radius:16px;display:grid;justify-items:center;align-content:center;gap:1px;color:#fff;font-weight:700}
+.sb .han{font-size:22px;line-height:1.1;font-weight:700} .sb small{font-size:10px;font-weight:700;opacity:.95}
+.sb.s1{background:var(--indigo)} .sb.s2{background:#4FC7A6} .sb.s3{background:#6FA5F2} .sb.s4{background:#F6A64A} .sb.s5{background:#9B9DB6}
+.panel2 .pfoot{grid-column:1/-1;display:grid;gap:6px;margin-top:2px}
+.panel2 h1{font-size:22px;font-weight:800;line-height:1.2}
+.racc{justify-self:start;font-size:12px;font-weight:800;color:var(--indigo);background:var(--surface);border-radius:999px;padding:4px 10px}
+.panel2 .pick{font-size:13px;color:var(--ink-2);gap:4px}
+.panel2 .pick select{font-size:14px}
+.cta{gap:8px}
+/* stats info card + history */
+.stat4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat4 div{background:var(--sunk);border-radius:14px;padding:10px 12px;display:grid;gap:4px;min-width:0}
+.stat4 .k{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);font-weight:600} .stat4 .k svg{width:18px;height:18px}
+.stat4 b{font-size:20px;font-weight:800}
+.dotc{width:10px;height:10px;border-radius:50%;display:inline-block}
+.hist{display:grid;gap:8px}
+.hist svg{width:100%;height:120px;display:block;background:linear-gradient(180deg,transparent,var(--sunk));border-radius:10px}
+/* memo */
+.memobtn{font-size:12px;font-weight:700;color:var(--indigo);background:var(--indigo-weak);border-radius:999px;padding:5px 10px;white-space:nowrap;flex:none}
+.memobtn.on{background:var(--indigo);color:var(--on-indigo)}
+.memo{display:grid;gap:8px;background:var(--sound-weak);border-radius:16px;padding:12px}
+.memo textarea{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;resize:vertical;min-height:72px;width:100%}
+.memo-note{background:var(--sound-weak);border-radius:12px;padding:8px 10px;font-size:13px;white-space:pre-wrap}
+/* handwriting recognition overlay */
+.wp-cell.faded canvas{opacity:.18}
+.wp-cell .rec{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.wp-cell .rec b{font-size:min(30vw,130px);line-height:1;font-weight:500;color:var(--ink)}
+.wp-cell .rec .alts{position:absolute;right:6px;bottom:6px;display:flex;gap:4px;pointer-events:auto}
+.wp-cell .rec .alts button{width:30px;height:30px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:17px;font-weight:600;line-height:1}
+.wp-cell.ok{border-color:var(--ok)} .wp-cell.no{border-color:var(--bad)} .wp-cell.no .rec b{color:var(--bad);opacity:.35}
+.wrongitem[data-hj]{text-align:left}
+.cta .btn.ghost{min-width:72px;white-space:nowrap;padding:0 14px}
 body{-webkit-user-select:none;user-select:none;overscroll-behavior:none}input{-webkit-user-select:text;user-select:text}</style></head><body><div id="app">
   <header class="top">
     <div class="brand"><b>먹빛 한자</b></div>
@@ -499,11 +542,11 @@ function loadChunk(kind, ch) {
 const LS = 'mukbit:v1';
 const SHARDS = 8;
 function defaultState() {
-  return { stage: '4급', placed: false, goal: 30, real: true, realv: 2, ruby: true, saved: [], lv: 0, moreRev: false, xp: 0, days: {}, types: {}, items: {}, wrong: [], read: {}, ts: 0, wts: 0 };
+  return { stage: '4급', placed: false, goal: 30, real: true, realv: 2, ruby: true, saved: [], lv: 0, moreRev: false, memo: {}, xp: 0, days: {}, types: {}, items: {}, wrong: [], read: {}, ts: 0, wts: 0 };
 }
 let S = defaultState();
 const cloud = { db: null, uid: null, on: false, dirty: new Set(), busy: false, timer: 0 };
-function loadLocal() { try { const t = localStorage.getItem(LS); if (t) S = Object.assign(defaultState(), JSON.parse(t)); } catch (e) { /* storage unavailable */ } if (S.realv !== 2) { S.real = true; S.realv = 2; } if (!Array.isArray(S.saved)) S.saved = []; if (!S.lv) S.lv = 0; }
+function loadLocal() { try { const t = localStorage.getItem(LS); if (t) S = Object.assign(defaultState(), JSON.parse(t)); } catch (e) { /* storage unavailable */ } if (S.realv !== 2) { S.real = true; S.realv = 2; } if (!Array.isArray(S.saved)) S.saved = []; if (!S.lv) S.lv = 0; if (!S.memo || typeof S.memo !== 'object') S.memo = {}; }
 let lsTimer = 0;
 function saveLocal() { clearTimeout(lsTimer); lsTimer = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* ignore */ } }, 250); }
 function shardOf(key) { let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0; return h % SHARDS; }
@@ -511,7 +554,7 @@ function touch(...docs) { S.ts = Date.now(); saveLocal(); for (const d of docs) 
 function touchItem(key) { touch('it' + shardOf(key), 'meta'); }
 function scheduleCloud() { if (!cloud.on) return; clearTimeout(cloud.timer); cloud.timer = setTimeout(flushCloud, 3000); }
 function shardBody(n) { const m = {}; for (const k in S.items) if (shardOf(k) === n) m[k] = S.items[k]; return { v: JSON.stringify(m), ts: Date.now() }; }
-function metaBody() { return { v: JSON.stringify({ stage: S.stage, placed: S.placed, goal: S.goal, real: S.real, realv: S.realv, ruby: S.ruby, xp: S.xp, days: S.days, types: S.types, read: S.read, saved: S.saved, lv: S.lv, moreRev: S.moreRev }), ts: S.ts }; }
+function metaBody() { return { v: JSON.stringify({ stage: S.stage, placed: S.placed, goal: S.goal, real: S.real, realv: S.realv, ruby: S.ruby, xp: S.xp, days: S.days, types: S.types, read: S.read, saved: S.saved, lv: S.lv, moreRev: S.moreRev, memo: S.memo }), ts: S.ts }; }
 function docRef(name) { return cloud.db.doc('data/users/' + cloud.uid + '/' + name); }
 async function flushCloud() {
   if (!cloud.on || cloud.busy || !cloud.dirty.size) return;
@@ -551,7 +594,7 @@ async function initCloud() {
       if (!snap.exists) { if (name === 'meta' ? S.ts : name === 'wrong' ? S.wrong.length : Object.keys(S.items).some(k => 'it' + shardOf(k) === name)) cloud.dirty.add(name); return; }
       const body = snap.data(); let v; try { v = JSON.parse(body.v); } catch (e) { return; }
       if (name === 'meta') {
-        if ((body.ts || 0) > S.ts) { for (const k of ['stage', 'placed', 'goal', 'real', 'realv', 'ruby', 'types', 'read', 'saved', 'lv', 'moreRev']) if (v[k] !== undefined) S[k] = v[k]; changed = true; } else if ((body.ts || 0) < S.ts) cloud.dirty.add('meta');
+        if ((body.ts || 0) > S.ts) { for (const k of ['stage', 'placed', 'goal', 'real', 'realv', 'ruby', 'types', 'read', 'saved', 'lv', 'moreRev', 'memo']) if (v[k] !== undefined) S[k] = v[k]; changed = true; } else if ((body.ts || 0) < S.ts) cloud.dirty.add('meta');
         S.xp = Math.max(S.xp, v.xp || 0);
         for (const d in (v.days || {})) { const a = S.days[d], b = v.days[d]; if (!a || b[0] > a[0]) { S.days[d] = b; changed = true; } }
       } else if (name === 'wrong') {
@@ -585,6 +628,7 @@ function charLv(c) { const x = D.C.get(c); return x ? x.l : 0; }
 function userLv() { return Math.max(1, Math.min(30, S.lv || 1)); }
 function recordAnswer(q, ok, hinted) {
   const now = nowMin();
+  q.wasNew = !S.items[q.keys[0]];
   for (const key of q.keys) {
     const was = S.items[key]; const it = was || [0, 0, 0, 0, 0, 0];
     if (ok) {
@@ -601,7 +645,9 @@ function recordAnswer(q, ok, hinted) {
       S.lv = Math.max(1, Math.min(30, ok ? lv + (hinted ? 0.05 : 0.12 + Math.max(0, cl - lv) * 0.06) : lv - 0.25 - Math.max(0, lv - cl) * 0.1));
     }
   }
-  const dk = dayKey(); const d = S.days[dk] || [0, 0]; d[0]++; if (ok) d[1]++; S.days[dk] = d;
+  const dk = dayKey(); const d = S.days[dk] || [0, 0]; while (d.length < 7) d.push(0); d[0]++; if (ok) d[1]++;
+  if (q.keys[0][0] === 'c') { if (q.wasNew) { d[2]++; if (ok && !hinted) d[3]++; } else { d[4]++; if (ok) d[5]++; } }
+  const tnow = Date.now(); if (Q.lastAt) d[6] += Math.min(60, Math.round((tnow - Q.lastAt) / 1000)); Q.lastAt = tnow; S.days[dk] = d;
   const t = S.types[q.type] || [0, 0]; t[1]++; if (ok) t[0]++; S.types[q.type] = t;
   S.xp += ok ? 10 : 2;
   if (!ok) {
@@ -648,6 +694,58 @@ function seenTag(q) {
   const it = S.items[q.keys[0]]; if (!it) return ['new', 'New'];
   const days = Math.floor((nowMin() - it[4]) / 1440); const mins = nowMin() - it[4];
   return ['rev', (mins < 60 ? mins + '분 전' : days <= 0 ? '오늘' : days + '일 전') + ' · 복습'];
+}
+
+/* per-character memo */
+function setMemo(c, text) { text = (text || '').trim(); if (text) S.memo[c] = text; else delete S.memo[c]; touch('meta'); }
+function todayRec() { const d = S.days[dayKey()] || [0, 0, 0, 0, 0, 0, 0]; while (d.length < 7) d.push(0); return d; }
+function fmtSecs(s) { s = Math.round(s || 0); if (s < 60) return s + '초'; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + '시간 ' : '') + m + '분' + (h ? '' : ' ' + (s % 60) + '초'); }
+
+/* ============ handwriting recognition (offline, template matching on stroke shapes) ============ */
+const HW = { t: null, loading: null };
+function loadHW() {
+  if (HW.t) return Promise.resolve(HW.t);
+  if (!HW.loading) HW.loading = fetch('data/hw.json').then(r => r.json()).then(j => { HW.t = j; HW.keys = Object.keys(j); HW.byN = {}; for (const c of HW.keys) { const n = j[c].length; (HW.byN[n] = HW.byN[n] || []).push(c); } return j; }).catch(() => { HW.loading = null; return null; });
+  return HW.loading;
+}
+function hwResample(pts, n = 8) {
+  if (pts.length === 1) pts = [pts[0], pts[0]];
+  const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const tot = L[L.length - 1] || 1e-6, out = [];
+  for (let k = 0; k < n; k++) {
+    const t = tot * k / (n - 1); let j = 0; while (j < L.length - 2 && L[j + 1] < t) j++;
+    const seg = (L[j + 1] - L[j]) || 1e-6, u = (t - L[j]) / seg;
+    out.push(pts[j][0] + (pts[j + 1][0] - pts[j][0]) * u, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * u);
+  }
+  return out;
+}
+/* strokes: arrays of [x,y] in any unit -> template form (8 pts each, glyph box 0..255) */
+function hwNormalize(strokes) {
+  const rs = strokes.map(s => hwResample(s));
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const r of rs) for (let i = 0; i < r.length; i += 2) { x0 = Math.min(x0, r[i]); x1 = Math.max(x1, r[i]); y0 = Math.min(y0, r[i + 1]); y1 = Math.max(y1, r[i + 1]); }
+  const side = Math.max(x1 - x0, y1 - y0, 1e-6), ox = (side - (x1 - x0)) / 2, oy = (side - (y1 - y0)) / 2;
+  return rs.map(r => r.map((v, i) => (i % 2 ? (v - y0 + oy) : (v - x0 + ox)) * 255 / side));
+}
+function hwStrokeDist(a, b) {
+  let d = 0; for (let i = 0; i < 16; i += 2) d += Math.hypot(a[i] - b[i], a[i + 1] - b[i + 1]);
+  return d / 8;
+}
+function hwScore(u, t) {
+  const n = u.length, m = t.length, P = 70;      // cost of a skipped stroke
+  if (n === m) { let s = 0; for (let i = 0; i < n; i++) s += hwStrokeDist(u[i], t[i]); return s / n; }
+  const dp = []; for (let i = 0; i <= n; i++) { dp.push(new Float64Array(m + 1)); dp[i][0] = i * P; }
+  for (let j = 1; j <= m; j++) dp[0][j] = j * P;
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) dp[i][j] = Math.min(dp[i - 1][j - 1] + hwStrokeDist(u[i - 1], t[j - 1]), dp[i - 1][j] + P, dp[i][j - 1] + P);
+  return dp[n][m] / Math.max(n, m);
+}
+/* returns [{c, s}] best first; `prefer` (optional) restricts candidates by stroke count window */
+function hwRecognize(strokes, top = 3) {
+  if (!HW.t || !strokes.length) return [];
+  const u = hwNormalize(strokes); const k = u.length; const out = [];
+  for (let n = Math.max(1, k - 3); n <= k + 3; n++) for (const c of (HW.byN[n] || [])) { const s = hwScore(u, HW.t[c]) + Math.abs(n - k) * 6; out.push([s, c]); }
+  out.sort((a, b) => a[0] - b[0]);
+  return out.slice(0, top).map(([s, c]) => ({ c, s }));
 }
 
 /* ============ shared renderers ============ */
@@ -857,23 +955,28 @@ function genType(type, st, used) {
   if (q && used) used.add(q.keys[0]);
   return q;
 }
-/* a question that teaches or reviews one character: always 훈음, always typed */
-function qForChar(x, st) {
+/* a question that teaches or reviews one character: 훈음 typed, or 한자 쓰기 (handwriting) */
+function qForChar(x, st, kind) {
+  if (kind === 'write') { const q = qWrite(x, st); return q; }
   const q = qHun(x, st); q.mode = 'text'; return q;
 }
-/* today's set: due reviews first (fragile ones first), then new characters near my level */
-function buildToday(st, n = 15) {
-  const dueAll = dueKeys(st);
-  const nRev = Math.min(dueAll.length, S.moreRev ? n : Math.max(Math.ceil(n * 0.6), n - 5));
-  const due = dueAll.slice(0, nRev);
-  const fresh = pickNew(st, n - due.length);
+/* today's set. Before the daily goal: 80% new / 20% review. After it: 80% review / 20% new.
+   Reviews are the fragile ones first; new characters sit near my level. */
+function todayMix(st, n) {
+  const dueAll = dueKeys(st); const after = todayRec()[0] >= S.goal;
+  const wantRev = Math.round(n * (after ? 0.8 : 0.2));
+  let due = dueAll.slice(0, Math.min(dueAll.length, wantRev));
+  let fresh = pickNew(st, n - due.length);
+  if (due.length + fresh.length < n) due = dueAll.slice(0, Math.min(dueAll.length, n - fresh.length));
+  return { due, fresh, dueAll, after };
+}
+function buildToday(st, n = 15, kind) {
+  const { due, fresh } = todayMix(st, n);
   let targets = [...due, ...fresh];
-  if (targets.length < n) targets = targets.concat(dueAll.slice(nRev, nRev + n - targets.length));
   if (targets.length < n) { const weak = stageChars(st).filter(x => !targets.includes(x) && S.items['c' + x.c]).sort((a, b) => boxOf('c' + a.c) - boxOf('c' + b.c)); targets = targets.concat(shuffle(weak.slice(0, 40)).slice(0, n - targets.length)); }
-  const qs = targets.map(x => qForChar(x, st));
-  // interleave reviews and new characters
+  const qs = targets.map(x => qForChar(x, st, kind));
   const a = qs.slice(0, due.length), b = qs.slice(due.length), out = [];
-  while (a.length || b.length) { if (a.length) out.push(a.shift()); if (b.length) out.push(b.shift()); if (a.length && a.length > b.length) out.push(a.shift()); }
+  while (a.length || b.length) { if (a.length) out.push(a.shift()); if (b.length) out.push(b.shift()); if (b.length && b.length > a.length) out.push(b.shift()); }
   return out;
 }
 function buildMock(st, size) {
@@ -905,7 +1008,7 @@ function makePad(cell) {
   const end = () => { cur = null; cell.dispatchEvent(new CustomEvent('stroke')); };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
   requestAnimationFrame(size); window.addEventListener('resize', size);
-  return { count: () => strokes.length, undo() { strokes.pop(); redraw(); }, clear() { strokes.length = 0; redraw(); }, destroy() { window.removeEventListener('resize', size); } };
+  return { count: () => strokes.length, strokes: () => strokes, undo() { strokes.pop(); redraw(); }, clear() { strokes.length = 0; redraw(); }, destroy() { window.removeEventListener('resize', size); } };
 }
 const strokeLoader = (ch, onLoad, onErr) => loadChunk('s', ch).then(d => d ? onLoad(d) : onErr && onErr('none'));
 function hwOpts(extra) {
@@ -914,9 +1017,26 @@ function hwOpts(extra) {
 
 /* ============ session ============ */
 const Q = { on: false };
+const SESS = 'mukbit:session';
+function saveSession() {
+  if (!Q.on || Q.mode === 'level' || Q.mode === 'mock' || Q.gen) return;
+  try { localStorage.setItem(SESS, JSON.stringify({ mode: Q.mode, kind: Q.kind || '', i: Q.i, right: Q.right, total: Q.total, combo: Q.combo, best: Q.best, byType: Q.byType, xp0: Q.xp0, t0: Q.t0, at: Date.now(), stage: S.stage,
+    list: Q.list.map(q => [q.re, q.retry ? 1 : 0, q.keys.slice(1)]), wrong: Q.wrong.map(q => q.re) })); } catch (e) { /* ignore */ }
+}
+function clearSession() { try { localStorage.removeItem(SESS); } catch (e) { /* ignore */ } }
+function savedSession() { try { const j = JSON.parse(localStorage.getItem(SESS) || 'null'); if (j && Date.now() - j.at < 36e5 * 36 && j.i < j.list.length) return j; } catch (e) { /* ignore */ } return null; }
+function resumeSession() {
+  const j = savedSession(); if (!j) return false; const st = stageOf(j.stage || S.stage);
+  const build = ([re, retry, extra]) => { let q = qFromRe(re, st); if (!q) return null; if (j.kind === 'write' && re[0] === 'hun') q = qWrite(D.C.get(re[1]), st); if (re[0] === 'hun' && j.kind !== 'write') q.mode = 'text'; if (retry) q.retry = true; if (extra && extra.length) q.keys.push(...extra); return q; };
+  const list = j.list.map(build).filter(Boolean); if (!list.length) { clearSession(); return false; }
+  startSession(j.mode, list, { kind: j.kind });
+  Object.assign(Q, { i: Math.min(j.i, list.length - 1), right: j.right, total: j.total, combo: j.combo, best: j.best, byType: j.byType || {}, xp0: j.xp0, t0: j.t0, wrong: (j.wrong || []).map(re => qFromRe(re, st)).filter(Boolean) });
+  renderQ(); return true;
+}
 function startSession(mode, qs, opts = {}) {
   if (!qs || !qs.length) { toast('이 범위에서는 낼 문제가 없습니다'); return; }
-  Object.assign(Q, { on: true, mode, list: qs.slice(), i: 0, right: 0, total: 0, combo: 0, best: 0, wrong: [], byType: {}, xp0: S.xp, opts, t0: Date.now(), state: 'ask', gen: opts.gen || null, pads: [], writers: [] });
+  Object.assign(Q, { on: true, mode, kind: opts.kind || '', list: qs.slice(), i: 0, right: 0, total: 0, combo: 0, best: 0, wrong: [], byType: {}, xp0: S.xp, opts, t0: Date.now(), lastAt: Date.now(), state: 'ask', gen: opts.gen || null, pads: [], writers: [] });
+  if (!opts.gen && mode !== 'level' && mode !== 'mock') saveSession();
   $('#session').hidden = false; document.body.style.overflow = 'hidden';
   clearInterval(Q.timer); if (mode === 'mock') Q.timer = setInterval(tickClock, 1000);
   renderQ();
@@ -950,7 +1070,7 @@ function renderQ() {
   const ql = Math.max(0, ...(q.chars || []).map(c => charLv(c))); const meta = `<div class="q-meta"><span class="lv">레벨 ${ql || '—'}${g < 99 ? ' · ' + GR[g] : ''}</span><span class="grow"></span>${Q.mode === 'mock' ? '' : `<span class="tag ${tag[0]}">${tag[1]}</span>`}<button class="heart${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}" aria-label="저장">${saved ? '♥' : '♡'}</button></div>`;
   $('#session').innerHTML = head + `<div class="q-body"><div class="q-kind"><span class="stamp ghost">${TYPES[q.type].h}</span>${esc(TYPES[q.type].n)} · ${esc(q.title)}</div><div class="q-stem">${meta}${q.stem}<div id="q-hint"></div></div>${input}<div id="q-fb"></div></div><div class="q-foot"><div id="q-foot"></div></div>`;
   Q.hinted = false;
-  if (q.mode === 'write') { if (Q.canHw) startHwMode(); else startFreeMode(); }
+  if (q.mode === 'write') startFreeMode();
   footer();
   if (Q.mode === 'mock') tickClock();
   const a = $('#q-answer'); if (a) { a.focus(); a.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); primary(); } }); }
@@ -977,7 +1097,7 @@ function primary() {
   if (q.mode === 'text') {
     const el = $('#q-answer'); const v = el.value.trim(); if (!v) { el.focus(); return; }
     const ok = q.check(v); el.disabled = true; el.classList.add(ok ? 'ok' : 'no'); Q.typed = v; finish(ok);
-  } else if (q.mode === 'write') revealWrite();
+  } else if (q.mode === 'write') checkFree();
   else if (q.mode === 'self') { const el = $('#q-answer'); Q.typed = el ? el.value.trim() : ''; if (el) el.disabled = true; Q.state = 'judge'; $('#q-fb').innerHTML = `<div class="fb neutral">${Q.typed ? `<p class="small">내 답: <b>${esc(Q.typed)}</b></p>` : ''}${q.explain()}<p class="small muted">뜻이 통하면 맞은 것으로 하세요.</p></div>`; footer(); }
 }
 function revealWrite() {
@@ -989,11 +1109,37 @@ function revealWrite() {
   footer();
 }
 function startFreeMode() {
-  const q = Q.q; Q.hwMode = false; Q.writers.forEach(w => { try { w.cancelQuiz(); } catch (e) { /* ignore */ } }); Q.writers = []; Q.pads.forEach(p => p.destroy()); Q.pads = [];
-  $$('.wp-cell').forEach(c => { c.innerHTML = ''; delete c.dataset.locked; Q.pads.push(makePad(c)); });
-  $('#wp-tools').innerHTML = `<button class="btn sm quiet" data-act="undo">한 획 지우기</button><button class="btn sm quiet" data-act="clear">모두 지우기</button>${Q.canHw ? '<button class="btn sm ghost" data-act="hwmode">획순 채점으로</button>' : ''}`;
-  $('#wp-note').textContent = '칸마다 한 글자씩 쓰고 정답 확인을 누르면 직접 채점합니다.';
+  const q = Q.q; Q.hwMode = false; Q.writers.forEach(w => { try { w.cancelQuiz(); } catch (e) { /* ignore */ } }); Q.writers = []; Q.pads.forEach(p => p.destroy()); Q.pads = []; Q.rec = q.answerChars.map(() => null);
+  $$('.wp-cell').forEach((c, i) => { c.innerHTML = ''; delete c.dataset.locked; Q.pads.push(makePad(c)); c.addEventListener('stroke', () => scheduleRecog(i)); });
+  $('#wp-tools').innerHTML = `<button class="btn sm quiet" data-act="undo">한 획 지우기</button><button class="btn sm quiet" data-act="rewrite">다시 쓰기</button>${Q.canHw ? '<button class="btn sm ghost" data-act="hwmode">획순 채점으로</button>' : ''}`;
+  $('#wp-note').innerHTML = HW.t ? '손가락으로 쓰면 글자를 알아봅니다. 다르게 읽히면 아래 다른 글자를 누르거나 다시 쓰세요.' : '필기 인식 자료를 불러오는 중…';
+  if (!HW.t) loadHW().then(() => { const n = $('#wp-note'); if (n && Q.on && !Q.hwMode) n.textContent = '손가락으로 쓰면 글자를 알아봅니다. 다르게 읽히면 아래 다른 글자를 누르거나 다시 쓰세요.'; });
   footer();
+}
+function scheduleRecog(i) { clearTimeout(Q.recT); Q.recT = setTimeout(() => recogCell(i), 650); }
+function recogCell(i) {
+  const pad = Q.pads[i], cell = $$('.wp-cell')[i]; if (!pad || !cell || Q.state !== 'ask') return;
+  const strokes = pad.strokes().map(s => s.map(p => [p[0], p[1]]));
+  if (!strokes.length) { Q.rec[i] = null; cell.querySelector('.rec') && cell.querySelector('.rec').remove(); return; }
+  if (!HW.t) return;
+  const r = hwRecognize(strokes, 3); if (!r.length) return;
+  showRec(i, r[0].c, r.slice(1).map(x => x.c));
+}
+function showRec(i, c, alts) {
+  const cell = $$('.wp-cell')[i]; Q.rec[i] = c; cell.classList.add('faded');
+  let el = cell.querySelector('.rec'); if (!el) { el = document.createElement('div'); el.className = 'rec'; cell.appendChild(el); }
+  el.innerHTML = `<b class="han">${c}</b>` + (alts && alts.length ? `<div class="alts">${alts.map(a => `<button data-alt="${i}:${a}" class="han">${a}</button>`).join('')}</div>` : '');
+  const note = $('#wp-note'); if (note) note.innerHTML = Q.rec.every(Boolean) ? '쓴 글자를 다 알아봤습니다. 정답 확인을 누르세요.' : '다음 칸도 써 주세요.';
+}
+function rewriteCells() { Q.pads.forEach(p => p.clear()); $$('.wp-cell').forEach(c => { c.classList.remove('faded'); const r = c.querySelector('.rec'); if (r) r.remove(); }); Q.rec = Q.rec.map(() => null); const n = $('#wp-note'); if (n) n.textContent = '다시 써 보세요.'; }
+function checkFree() {
+  const q = Q.q;
+  if (!Q.rec || !Q.rec.every(Boolean)) { revealWrite(); return; }                // nothing recognised → self-judge as before
+  const ok = Q.rec.every((c, i) => c === q.answerChars[i]);
+  $$('.wp-cell').forEach((c, i) => { c.dataset.locked = '1'; c.classList.toggle('ok', Q.rec[i] === q.answerChars[i]); c.classList.toggle('no', Q.rec[i] !== q.answerChars[i]); if (Q.rec[i] !== q.answerChars[i]) { const m = document.createElement('div'); m.className = 'model'; m.textContent = q.answerChars[i]; m.style.fontSize = (c.clientWidth * 0.82) + 'px'; c.appendChild(m); } });
+  $$('.wp-tools button').forEach(b => b.disabled = true);
+  const note = $('#wp-note'); if (note) note.textContent = ok ? '쓴 글자가 정답과 같습니다.' : '붉은 글자가 정답입니다. 내가 쓴 글자: ' + Q.rec.join('');
+  finish(ok);
 }
 function startHwMode() {
   const q = Q.q; if (typeof HanziWriter === 'undefined') { startFreeMode(); return; }
@@ -1018,7 +1164,7 @@ function choose(i) {
   finish(!!c.ok);
 }
 function finish(ok, skipped) {
-  const q = Q.q; Q.state = 'done';
+  const q = Q.q; Q.state = 'done'; clearTimeout(Q.recT);
   if (!q.retry) {
     Q.total++; if (ok) Q.right++;
     const bt = Q.byType[q.type] || (Q.byType[q.type] = [0, 0]); bt[1]++; if (ok) bt[0]++;
@@ -1027,9 +1173,10 @@ function finish(ok, skipped) {
   }
   Q.combo = ok ? Q.combo + 1 : 0; Q.best = Math.max(Q.best, Q.combo);
   if (Q.opts.onAnswer) Q.opts.onAnswer(q, ok);
+  saveSession();
   if (Q.mode === 'mock' || Q.mode === 'level') return nextQ();
   const soft = !ok && !skipped && q.soft && q.mode === 'text';
-  $('#q-fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><div class="fb-h"><span class="verdict">${ok ? '正' : '誤'}</span>${ok ? (Q.combo >= 3 ? Q.combo + '연속 정답' : '정답') : (skipped ? '정답을 확인하세요' : '아쉬워요')}</div>${q.explain()}${soft ? '<button class="btn sm ghost" data-act="override">내 답도 맞아요</button>' : ''}</div>`;
+  $('#q-fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}"><div class="fb-h"><span class="verdict">${ok ? '正' : '誤'}</span>${ok ? (Q.combo >= 3 ? Q.combo + '연속 정답' : '정답') : (skipped ? '정답을 확인하세요' : '아쉬워요')}</div>${q.explain()}${memoNote(q)}${soft ? '<button class="btn sm ghost" data-act="override">내 답도 맞아요</button>' : ''}</div>`;
   footer();
   const fb = $('#q-fb'); if (fb.scrollIntoView) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -1039,13 +1186,13 @@ function overrideOk() {
   $('#q-fb').innerHTML = `<div class="fb ok"><div class="fb-h"><span class="verdict">正</span>정답으로 처리했습니다</div>${q.explain()}</div>`;
 }
 function nextQ() {
-  Q.i++;
+  Q.i++; Q.lastAt = Date.now(); saveSession();
   if (Q.gen) { const q = Q.gen(); if (q) Q.list.push(q); }
   if (Q.i >= Q.list.length) return showResult();
   renderQ();
 }
 function showResult() {
-  cleanupQ(); clearInterval(Q.timer);
+  cleanupQ(); clearInterval(Q.timer); clearSession();
   if (Q.opts.onEnd) { const html = Q.opts.onEnd(); if (html) { $('#session').innerHTML = html; return; } }
   const xp = S.xp - Q.xp0; const pct = Q.total ? Math.round(100 * Q.right / Q.total) : 0;
   let extra = '';
@@ -1063,8 +1210,9 @@ function showResult() {
   </div></div><div class="q-foot"><div><button class="btn quiet" data-act="quit">끝내기</button>${Q.opts.again ? '<button class="btn" data-act="again">한 번 더</button>' : ''}</div></div>`;
 }
 document.addEventListener('click', e => {
-  if (!Q.on) return; const t = e.target.closest('[data-act],[data-opt]'); if (!t || !$('#session').contains(t)) return;
+  if (!Q.on) return; const t = e.target.closest('[data-act],[data-opt],[data-alt]'); if (!t || !$('#session').contains(t)) return;
   if (t.dataset.opt != null) return choose(+t.dataset.opt);
+  if (t.dataset.alt != null) { const [i, c] = t.dataset.alt.split(':'); const alts = [...t.parentNode.querySelectorAll('button')].map(b => b.textContent).filter(x => x !== c).concat([Q.rec[+i]]); showRec(+i, c, alts); return; }
   switch (t.dataset.act) {
     case 'quit': endSession(); break;
     case 'primary': primary(); break;
@@ -1073,13 +1221,14 @@ document.addEventListener('click', e => {
     case 'judge-ok': finish(true); break;
     case 'judge-no': finish(false); break;
     case 'override': overrideOk(); break;
-    case 'undo': Q.pads.forEach((p, i) => { if (i === (Q.lastPad || 0)) p.undo(); }); break;
+    case 'undo': Q.pads.forEach((p, i) => { if (i === (Q.lastPad || 0)) { p.undo(); if (!Q.hwMode) recogCell(i); } }); break;
     case 'clear': Q.pads.forEach(p => p.clear()); break;
     case 'hwmode': startHwMode(); break;
     case 'freemode': startFreeMode(); break;
+    case 'rewrite': rewriteCells(); break;
     case 'hint': showHint(); break;
     case 'save': { const on = toggleSave(Q.q); t.classList.toggle('on', on); t.textContent = on ? '♥' : '♡'; t.setAttribute('aria-pressed', on); toast(on ? '저장했습니다' : '저장을 지웠습니다'); break; }
-    case 'again': { const f = Q.opts.again; endSession(); f(); break; }
+    case 'again': { const f = Q.opts.again; clearSession(); endSession(); f(); break; }
   }
 });
 document.addEventListener('pointerdown', e => { const c = e.target.closest && e.target.closest('.wp-cell'); if (c && Q.on) Q.lastPad = +c.dataset.cell; });
@@ -1115,6 +1264,8 @@ document.addEventListener('click', e => {
   else if (t.dataset.lv === 'keep') t.closest('.card').remove();
   else if (t.dataset.lv === 'apply') { S.stage = rec.id; S.placed = true; S.lv = lvOfGrade(Q.level.est); touch('meta'); Q.level = null; endSession(); }
 });
+
+function memoNote(q) { const c = (q.chars || []).find(c => S.memo[c]); return c ? `<div class="memo-note"><span class="badge">내 메모 · ${c}</span>${esc(S.memo[c])}</div>` : ''; }
 
 /* ============ mascot & icons ============ */
 function mascot(cls) {
@@ -1168,38 +1319,42 @@ function homeLists(st) {
 }
 function viewHome(st) {
   if (V.list) return viewList(st);
-  const today = (S.days[dayKey()] || [0, 0]); const pct = Math.round(100 * today[0] / S.goal); const C0 = 2 * Math.PI * 31;
+  const today = todayRec(); const pct = Math.round(100 * today[0] / S.goal); const C0 = 2 * Math.PI * 31;
   const due = dueKeys(st).length; const pr = stageProgress(st); const w = weekStats();
   const wn = w.reduce((s, x) => s + x.n, 0), wok = w.reduce((s, x) => s + x.ok, 0);
   const acc = ts => { let a = 0, b = 0; ts.forEach(t => { const v = S.types[t]; if (v) { a += v[0]; b += v[1]; } }); return b ? '정답률 ' + Math.round(100 * a / b) + '%' : ''; };
   const tiles = [['dok'], ['hun'], ['write'], ['bus'], ['ant', 'syn'], ['homo'], ['idiom'], ['abbr'], ['mean']];
-  const L = homeLists(st);
-  // this week's attendance, Monday first
+  const L = homeLists(st); const sess = savedSession();
+  let rN = 0, rOk = 0; Object.values(S.days).forEach(d => { rN += d[4] || 0; rOk += d[5] || 0; });
   const now = new Date(); const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   const att = ['월', '화', '수', '목', '금', '토', '일'].map((n, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); const on = !!S.days[dayKey(d)]; const isToday = dayKey(d) === dayKey(now); return `<span class="${isToday && !on ? 'today' : ''}" title="${n}요일">${on ? attStar(true) : n}</span>`; }).join('');
   const lrow = (k, icon) => `<button class="lrow" data-list="${k}"><span class="ic">${icon}</span><b>${L[k].t}</b><span class="cnt num">${L[k].list.length}</span><span class="chev" aria-hidden="true">›</span></button>`;
+  const sideBtn = (go, han, label, cls) => `<button class="sb ${cls}" data-go="${go}"><span class="han">${han}</span><small>${label}</small></button>`;
   return `<div class="stack" style="gap:0">
-  <section class="panel">${mascot()}
-    <div class="info"><div class="pct"><svg viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="31" fill="none" stroke="var(--surface)" stroke-width="5"/><circle cx="35" cy="35" r="31" fill="none" stroke="var(--indigo)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C0}" stroke-dashoffset="${C0 * (1 - Math.min(1, pct / 100))}"/></svg><b class="num">${pct}<small>%</small></b></div>
-      <h1>한자 학습</h1>
-      <label class="pick">목표 급수: <select id="sel-stage" aria-label="목표 급수">${STAGES.map(s => `<option value="${s.id}"${s.id === st.id ? ' selected' : ''}>${s.id} · ${s.n.toLocaleString()}자</option>`).join('')}</select></label>
-      <label class="pick">하루 목표: <select id="sel-goal" aria-label="하루 목표">${[15, 30, 45, 60, 80].map(n => `<option value="${n}"${S.goal === n ? ' selected' : ''}>${n}문제</option>`).join('')}</select></label>
-    </div></section>
-  <div class="cta"><button class="btn" data-go="today">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '오늘의 학습'}</button></div>
+  <button class="streak" data-nav="stats"><span class="flame" aria-hidden="true">🔥</span><div class="grow"><b>연속 학습 <span class="num">${streak()}</span>일</b><div class="att">${att}</div></div><span class="chev" aria-hidden="true">›</span></button>
+  <section class="panel2">
+    <div class="ribbon" title="익힌 글자">${IC.trophy}<b class="num">${pr.m}</b></div>
+    ${mascot('mascot big')}
+    <div class="side">${sideBtn('today', '訓', '훈음 학습', 's1')}${sideBtn('todaywrite', '書', '한자 쓰기', 's2')}${sideBtn('gotoread', '讀', '지문 읽기', 's3')}${sideBtn('gotodict', '典', '한자 사전', 's4')}${sideBtn('gostats', '錄', '기록·설정', 's5')}</div>
+    <div class="pfoot"><button class="racc" data-nav="review">✔ 복습 정답률 ${rN ? Math.round(100 * rOk / rN) + '%' : '—'} ›</button>
+      <div class="row" style="align-items:flex-end;gap:8px"><div class="grow"><h1>한자 학습</h1><label class="pick">하루 목표 <select id="sel-goal" aria-label="하루 목표">${[15, 30, 45, 60, 80].map(n => `<option value="${n}"${S.goal === n ? ' selected' : ''}>${n}개</option>`).join('')}</select><span class="muted">·</span><select id="sel-stage" aria-label="목표 급수">${STAGES.map(s => `<option value="${s.id}"${s.id === st.id ? ' selected' : ''}>${s.id}</option>`).join('')}</select></label></div>
+      <div class="pct"><svg viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="31" fill="none" stroke="var(--surface)" stroke-width="5"/><circle cx="35" cy="35" r="31" fill="none" stroke="var(--indigo)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C0}" stroke-dashoffset="${C0 * (1 - Math.min(1, pct / 100))}"/></svg><b class="num">${pct}<small>%</small></b></div></div></div>
+  </section>
+  <div class="cta">${sess ? `<button class="btn" data-go="resume">▶ 이어서 하기 <span class="num" style="font-weight:600;opacity:.85">${sess.i}/${sess.list.length}</span></button><button class="btn ghost" data-go="${sess.kind === 'write' ? 'todaywrite' : 'today'}" style="width:auto;min-height:56px">새로</button>` : `<button class="btn" data-go="today">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '오늘의 학습'}</button>`}</div>
   <div style="height:14px"></div>
   <button class="hrow" data-nav="stats" style="border-top:0"><div><h3>학습 정보</h3><div class="info-legend"><span><i style="background:var(--badge)"></i>오늘 푼 문제: <b class="num">${today[0]}</b></span><span><i style="background:var(--indigo)"></i>오늘 맞힌 문제: <b class="num">${today[1]}</b></span><span><i style="background:var(--seal)"></i>복습할 글자: <b class="num">${due}</b></span></div></div>
     <div class="mini">${miniChart(w)}</div><div class="bigpct num"><span>7일 정답률</span>${wn ? Math.round(100 * wok / wn) : '—'}<small>%</small></div><span class="chev" aria-hidden="true">›</span></button>
   <button class="hrow" data-go="${S.placed ? 'gostats' : 'level'}"><h3>나의 한자력</h3>${S.placed ? '' : '<span class="coral">지금 측정 가능 ›</span>'}<span class="grow"></span><div class="bigpct num" style="font-size:24px"><span>${S.lv ? GR[gradeOfLv(userLv())] + ' 수준 · 익힌 ' + pr.m.toLocaleString() + '자' : st.id + ' 익힌 글자'}</span>${S.lv ? '레벨 ' + userLv().toFixed(1) : pr.m.toLocaleString()}<small>${S.lv ? '/ 30' : '/ ' + pr.n.toLocaleString() + '자'}</small></div><span class="chev" aria-hidden="true">›</span></button>
-  <div class="hrow"><h3>출석 체크</h3><div class="att">${att}</div></div>
   <div class="hrow" style="display:block"><div class="quick">
     <button data-go="level"><i class="q1"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M21 19H3"/></svg></i>레벨 테스트</button>
     <button data-go="mockpick"><i class="q2"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16l-6-3-6 3V4a1 1 0 0 1 1-1z"/><path d="M9.500 9l2 2 3.500-3.500"/></svg></i>모의고사</button>
-    <button data-nav="dict"><i class="q3"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg></i>한자 사전</button>
+    <button data-list="saved"><i class="q3"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 20.500l-1.400-1.300C5.600 14.700 2.500 12 2.500 8.500 2.500 5.700 4.700 3.500 7.500 3.500c1.600 0 3.100.700 4.100 1.900 1-1.200 2.500-1.900 4.100-1.900 2.800 0 5 2.200 5 5 0 3.500-3.100 6.200-8.100 10.700z"/></svg></i>저장한 문제</button>
     <button data-nav="review"><i class="q4">${due ? `<span class="n num">${due > 99 ? '99+' : due}</span>` : ''}<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.500-5.800M20 4v4h-4"/><path d="M12 8v4l2.500 2"/></svg></i>기억력 복습</button>
   </div></div>
   <div class="group"><h3>유형별 연습 · 실제 시험 문항 수</h3>${tiles.map(ts => { const n = ts.reduce((s, t) => s + st.dist[t], 0) || 0; return `<button class="lrow" data-go="type" data-type="${ts.join(',')}"><span class="ic">${TYPES[ts[0]].h}</span><b>${ts.map(t => TYPES[t].n).join('·')}</b><span class="cnt num">${n}문항</span><span class="sub">${acc(ts)}</span><span class="chev" aria-hidden="true">›</span></button>`; }).join('')}</div>
   <div class="group"><h3>내 학습 목록</h3>
     <button class="lrow" data-list="saved"><span class="ic" style="color:var(--seal);background:var(--bad-weak)">♥</span><b>저장한 문제</b><span class="cnt num">${S.saved.length}</span><span class="chev" aria-hidden="true">›</span></button>
+    <button class="lrow" data-list="memo"><span class="ic">記</span><b>메모한 글자</b><span class="cnt num">${Object.keys(S.memo).length}</span><span class="chev" aria-hidden="true">›</span></button>
     <button class="lrow" data-nav="review"><span class="ic">誤</span><b>최근에 틀린 문제</b><span class="cnt num">${S.wrong.length}</span><span class="chev" aria-hidden="true">›</span></button>
     ${lrow('recent', '近')}${lrow('worst', '難')}${lrow('forgot', '忘')}${lrow('learning', '習')}${lrow('known', '知')}${lrow('done', '完')}</div>
   <div class="group" id="mock-card"><h3>${st.id} 모의고사</h3><p class="small muted" style="padding:2px 4px 10px">실제 배점대로 ${st.total}문항, 합격선 ${st.pass}점, 제한 시간 ${st.min}분. 독음과 훈음은 직접 입력하고 쓰기류는 손으로 씁니다. 장단음 문항은 독음으로 대신합니다.</p>
@@ -1212,6 +1367,11 @@ function viewList(st) {
     ${S.saved.length ? `<div class="card">${S.saved.map(w => `<div class="wrongitem"><div class="row"><div class="t grow">${TYPES[w.t] ? TYPES[w.t].n : ''}</div><button class="heart on" data-unsave="${esc(w.id)}" aria-label="저장 지우기">♥</button></div><div class="s">${hjs(w.s)}</div><div class="small">정답 <b class="han" style="font-size:16px">${esc(w.a)}</b></div></div>`).join('')}</div>
     <div class="cta" style="margin-top:6px"><button class="btn" data-go="savedstudy">${IC.book}저장한 문제 풀기</button></div>` : '<div class="empty">문제 화면의 ♡를 누르면 여기에 모입니다.</div>'}</div>`;
   }
+  if (V.list === 'memo') {
+    const ks = Object.keys(S.memo).filter(c => D.C.has(c));
+    return `<div class="stack"><div class="listhead"><button class="btn sm quiet" data-go="listback">‹ 학습</button><h2>메모한 글자 <span class="muted num" style="font-weight:500">${ks.length}</span></h2></div>
+    ${ks.length ? `<div class="card">${ks.map(c => `<button class="wrongitem" data-hj="${c}" style="width:100%"><div class="row"><b class="han" style="font-size:26px">${c}</b><span class="small muted">${esc(hm1(D.C.get(c)))}</span></div><div class="small" style="white-space:pre-wrap">${esc(S.memo[c])}</div></button>`).join('')}</div>` : '<div class="empty">글자 풀이 화면 오른쪽 위의 메모 버튼으로 외우는 방법을 적어 두면 여기에 모입니다.</div>'}</div>`;
+  }
   const L = homeLists(st)[V.list]; if (!L) { V.list = null; return viewHome(st); }
   return `<div class="stack"><div class="listhead"><button class="btn sm quiet" data-go="listback">‹ 학습</button><h2>${L.t} <span class="muted num" style="font-weight:500">${L.list.length}</span></h2></div>
   ${L.list.length ? `<div class="grid">${L.list.slice(0, 400).map(x => `<button class="cell" data-hj="${x.c}" data-m="${mastery(x)}" title="${esc(hm1(x))}">${x.c}</button>`).join('')}</div>
@@ -1219,21 +1379,20 @@ function viewList(st) {
 }
 
 /* ============ start modal ============ */
-const M = { n: 15 };
-function openStart() { M.n = S.todayN || 15; $('#modal').hidden = false; renderStart(); }
+const M = { n: 15, kind: 'hun' };
+function openStart(kind) { M.kind = kind || 'hun'; M.n = S.todayN || 15; $('#modal').hidden = false; renderStart(); }
 function closeStart() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
 function renderStart() {
   const st = stageOf(S.stage); const pr = stageProgress(st); const today = (S.days[dayKey()] || [0, 0]);
-  const dueAll = dueKeys(st).length; const due = Math.min(dueAll, S.moreRev ? M.n : Math.max(Math.ceil(M.n * 0.6), M.n - 5));
-  const fresh = Math.min(pickNew(st, M.n - due).length, M.n - due);
+  const mix = todayMix(st, M.n); const due = mix.due.length, fresh = mix.fresh.length;
   const p = Math.min(1, today[0] / S.goal); const R = 96, C0 = 2 * Math.PI * R, A = C0 * 0.72;
   $('#modal').innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="오늘의 한자 학습">
-    <div class="modal-h">${IC.bell}오늘의 한자 학습<button class="iconbtn" data-go="closestart" aria-label="닫기">✕</button></div>
+    <div class="modal-h">${IC.bell}${M.kind === 'write' ? '오늘의 한자 쓰기' : '오늘의 훈음 학습'}<button class="iconbtn" data-go="closestart" aria-label="닫기">✕</button></div>
     <div class="modal-b">
       <div class="course"><div class="row"><span class="grow">${st.id} 배정한자 ${st.n.toLocaleString()}자</span><small class="num">완료율 ${Math.round(100 * pr.m / pr.n)}%</small></div><div class="bar"><i style="width:${100 * pr.m / pr.n}%"></i></div>
         <div class="seg" style="margin-top:6px">${STAGES.map(s => `<button data-stage="${s.id}" aria-pressed="${s.id === st.id}">${s.id}</button>`).join('')}</div></div>
       <div class="arc"><svg class="a" viewBox="0 0 220 190" aria-hidden="true"><g transform="rotate(140 110 106)"><circle cx="110" cy="106" r="${R}" fill="none" stroke="var(--sunk)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${A} ${C0}"/><circle cx="110" cy="106" r="${R}" fill="none" stroke="var(--seal)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${Math.max(0.01, A * p)} ${C0}"/></g></svg>
-        <div class="mid">새로운 글자: <b class="num">${fresh}</b><br>복습할 글자: <b class="num">${due}</b><br><small class="muted" style="font-weight:600">훈음 주관식 · 내 레벨 ${userLv().toFixed(1)}</small></div>${mascot('mascot')}<div class="of num"><b>${today[0]}</b>/${S.goal}</div></div>
+        <div class="mid">새로운 글자: <b class="num">${fresh}</b><br>복습할 글자: <b class="num">${due}</b><br><small class="muted" style="font-weight:600">${mix.after ? '목표 달성 후 · 복습 80%' : '새 글자 80% · 복습 20%'} · 내 레벨 ${userLv().toFixed(1)}</small></div>${mascot('mascot')}<div class="of num"><b>${today[0]}</b>/${S.goal}</div></div>
       <div class="go"><div class="stepper"><button data-go="stepup" aria-label="문제 수 늘리기"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M10 0l10 10H0z" fill="currentColor"/></svg></button><div class="num">${M.n}<small>문제</small></div><button data-go="stepdown" aria-label="문제 수 줄이기"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M10 10L0 0h20z" fill="currentColor"/></svg></button></div>
         <button class="btn" data-go="start">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '학습 시작'}</button></div>
     </div></div>`;
@@ -1266,7 +1425,7 @@ function openSheet(c, w, r) {
   if (!D.C.has(c)) return;
   const top = Sheet.stack[Sheet.stack.length - 1];
   if (top && top.c === c && top.w === w) return;
-  Sheet.stack.push({ c, w, r }); Sheet.tab = 'char'; $('#sheet').hidden = false; renderSheet();
+  Sheet.stack.push({ c, w, r }); Sheet.tab = 'char'; Sheet.memoOpen = false; $('#sheet').hidden = false; renderSheet();
 }
 function closeSheet() { Sheet.stack = []; Sheet.writer = null; $('#sheet').hidden = true; $('#sheet').innerHTML = ''; }
 function illuSvg(h) { return `<svg viewBox="0 0 360 150" role="img" aria-label="${esc(h)} 삽화">${D.illu[h]}</svg>`; }
@@ -1297,8 +1456,9 @@ function renderSheet() {
     const ri = radInfo(x); const fk = x.p && D.fam[x.p] ? x.p : (D.fam[x.c] ? x.c : null);
     const ERAS = [['o', '갑골문', '상나라'], ['b', '금문', '주나라'], ['s', '소전', '진나라'], ['k', '해서', '오늘날']];
     const has = x.o || ''; const eras = ERAS.filter(e => e[0] === 'k' || has.includes(e[0])); const lack = ERAS.filter(e => e[0] !== 'k' && !has.includes(e[0])).map(e => e[1]);
-    body = `<div class="hero"><div class="big">${x.c}</div><div><h2>${esc(hmStr(x))}</h2>
+    body = `<div class="hero"><div class="big">${x.c}</div><div><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><h2 class="grow">${esc(hmStr(x))}</h2><button class="memobtn${S.memo[x.c] ? ' on' : ''}" data-sh="memo" aria-label="메모">${S.memo[x.c] ? '✎ 메모' : '+ 메모'}</button></div>
       <div class="facts"><span>${stampFor(x.g)}</span><span>레벨 <b class="num">${x.l}</b></span><span>부수 <b class="han">${esc(ri.shown)}</b> ${esc(ri.name)}${ri.alias ? ' · ' + esc(ri.alias) : ''}</span><span>총 <b class="num">${x.n}</b>획 <span class="muted">(부수 ${x.n - x.x} + ${x.x})</span></span>${x.a ? `<span>약자 <b class="han">${esc(x.a)}</b></span>` : ''}</div></div></div>
+    <div class="memo" id="memo-box"${S.memo[x.c] || Sheet.memoOpen ? '' : ' hidden'}><label class="small muted" for="memo-ta">내 메모 · 이 글자를 외우는 나만의 방법</label><textarea id="memo-ta" rows="3" placeholder="예: 木에 交를 더해 '학교'. 나무 아래서 사귄다">${esc(S.memo[x.c] || '')}</textarea><div class="row" style="justify-content:flex-end"><button class="btn sm quiet" data-sh="memodel">지우기</button><button class="btn sm" data-sh="memosave">저장</button></div></div>
     <div class="sec"><h3>자원 · 글자가 걸어온 길</h3><div class="evo" style="--n:${eras.length}">${eras.map(([k, n, era], i) => `<figure><div class="tile" data-era="${k}">${k === 'k' ? `<span class="han kai">${x.c}</span>` : ''}</div><figcaption>${n}<small>${era}</small></figcaption></figure>`).join('')}</div>${lack.length ? `<p class="small muted">${lack.join('·')} 자형은 전하지 않거나 이 앱에 실려 있지 않습니다.</p>` : ''}
       ${x.e ? `<p class="why"><span class="badge">${esc(x.e[0])}</span>${esc(x.e[1])}</p>` : '<p class="muted small">자원 풀이가 아직 없습니다.</p>'}</div>
     ${x.e && x.e[2].length ? `<div class="sec"><h3>분해</h3><div class="parts">${x.e[2].map((p, i) => { const cls = p[2] === '소리' ? 'sound' : p[2] === '모양' ? '' : p[2] === '뜻+소리' ? 'sound' : 'mean'; const tag = D.C.has(p[0]) && p[0] !== x.c ? 'button' : 'div'; return `${i ? '<span class="plus" aria-hidden="true">+</span>' : ''}<${tag} class="part ${cls}"${tag === 'button' ? ` data-hj="${p[0]}"` : ''}><em>${esc(p[2])} 부분</em><b>${esc(p[0])}</b><span>${esc(p[1] || '')}</span></${tag}>`; }).join('')}</div></div>` : ''}
@@ -1340,6 +1500,9 @@ document.addEventListener('click', e => {
     if (a === 'close') closeSheet();
     else if (a === 'back') { Sheet.stack.pop(); Sheet.tab = 'char'; renderSheet(); }
     else if (a === 'tab') { Sheet.tab = sh.dataset.tab; renderSheet(); }
+    else if (a === 'memo') { const b = $('#memo-box'); b.hidden = !b.hidden; Sheet.memoOpen = !b.hidden; if (!b.hidden) $('#memo-ta').focus(); }
+    else if (a === 'memosave') { const cur = Sheet.stack[Sheet.stack.length - 1]; setMemo(cur.c, $('#memo-ta').value); Sheet.memoOpen = false; toast('메모를 저장했습니다'); renderSheet(); }
+    else if (a === 'memodel') { const cur = Sheet.stack[Sheet.stack.length - 1]; setMemo(cur.c, ''); Sheet.memoOpen = false; renderSheet(); }
     else if (a === 'play' && Sheet.writer) { Sheet.writer.cancelQuiz(); Sheet.writer.showCharacter(); Sheet.writer.animateCharacter(); }
     else if (a === 'quiz' && Sheet.writer) { $('#hw-note').textContent = '획순대로 한 획씩 써 보세요.'; Sheet.writer.quiz({ showHintAfterMisses: 2, onComplete: s => { $('#hw-note').textContent = s.totalMistakes ? `다 썼습니다. 획 실수 ${s.totalMistakes}번.` : '실수 없이 다 썼습니다.'; } }); }
     return;
@@ -1429,7 +1592,11 @@ function viewStats(st) {
   for (let i = 0; i < 7; i++) { const k = dayKey(d); const n = (S.days[k] || [0])[0]; mx = Math.max(mx, n); days.push([['일', '월', '화', '수', '목', '금', '토'][d.getDay()], n]); d.setDate(d.getDate() + 1); }
   let exp = 0, known = 0; const trs = TYPE_ORDER.map(t => { const a = S.types[t]; const n = st.dist[t]; if (a && a[1] >= 3) { exp += n * a[0] / a[1]; known += n; } return `<tr><td>${TYPES[t].n}</td><td class="num">${n}</td><td class="num">${a ? a[0] + ' / ' + a[1] : '—'}</td><td class="num">${a && a[1] ? Math.round(100 * a[0] / a[1]) + '%' : '—'}</td></tr>`; }).join('');
   const est = known >= st.total * 0.6 ? Math.round(exp / known * st.total) : null;
+  let totN = 0, totS = 0; Object.values(S.days).forEach(d => { totN += d[0]; totS += d[6] || 0; }); const td = todayRec();
   return `<div class="stack">
+  <div class="card stack" style="gap:12px"><h2 style="text-align:center">한자 학습 정보</h2>
+    <div class="stat4"><div><span class="k">${IC.trophy}연속 학습</span><b class="num">${streak()}일</b></div><div><span class="k">${IC.star}총 학습 문제</span><b class="num">${totN.toLocaleString()}</b></div><div><span class="k"><i class="dotc" style="background:var(--ok)"></i>오늘 학습 시간</span><b class="num">${fmtSecs(td[6])}</b></div><div><span class="k"><i class="dotc" style="background:var(--seal)"></i>총 학습 시간</span><b class="num">${fmtSecs(totS)}</b></div></div>
+    ${histChart()}</div>
   <div class="card stack" style="gap:10px"><h2>나의 한자력 레벨</h2><div class="row"><b class="num" style="font-size:28px;font-weight:800;color:var(--indigo)">${S.lv ? userLv().toFixed(1) : '—'}</b><div class="grow small muted">${S.lv ? GR[gradeOfLv(userLv())] + ' 배정한자 수준. 처음 보는 글자를 맞히면 오르고 틀리면 내려갑니다. 새 글자는 내 레벨 근처에서 고릅니다.' : '레벨 테스트를 하거나 학습을 시작하면 매겨집니다.'}</div></div><div class="bar"><i style="width:${S.lv ? userLv() / 30 * 100 : 0}%"></i></div></div>
   <div class="card stack" style="gap:10px"><h2>${st.id} 예상 점수</h2>${est == null ? '<p class="small muted">유형별로 세 문제 이상씩 풀면, 내 정답률에 실제 배점을 곱해 예상 점수를 냅니다.</p>' : `<div class="row"><span class="stamp lg">${est >= st.pass ? '合' : '否'}</span><div class="grow"><b class="num" style="font-size:24px">${est}점</b> <span class="muted">/ ${st.total}점 · 합격선 ${st.pass}점</span></div></div>`}
     <div class="scroll-x"><table class="tbl"><tr><th>유형</th><th>시험 문항</th><th>맞음 / 푼 문제</th><th>정답률</th></tr>${trs}</table></div></div>
@@ -1438,7 +1605,6 @@ function viewStats(st) {
   <div class="card"><h2 style="margin-bottom:4px">설정</h2>
     <div class="switch"><div><b>학습 기록 저장 위치</b><div class="small muted">${cloud.on ? 'Claude 계정에 저장되어 다른 기기에서도 이어집니다.' : '이 기기 안에만 저장됩니다. 앱 데이터를 지우면 함께 사라집니다.'}</div></div></div>
     <div class="switch"><div><b>유형별 연습을 직접 써서 답하기</b><div class="small muted">켜면 독음은 입력하고 한자는 손으로 씁니다. 끄면 객관식으로 나옵니다. 오늘의 학습과 복습은 항상 훈음 주관식입니다.</div></div><button data-go="real" aria-pressed="${S.real}" aria-label="실전 모드"></button></div>
-    <div class="switch"><div><b>복습을 더 많이 하기</b><div class="small muted">켜면 복습할 글자가 밀려 있을 때 새 글자 대신 복습으로 채웁니다. 꺼 두면 새 글자 자리를 적어도 40%는 남깁니다.</div></div><button data-go="morerev" aria-pressed="${S.moreRev}" aria-label="복습을 더 많이 하기"></button></div>
     <div class="switch"><div><b>하루 목표</b><div class="small muted">오늘 푼 문제 수 기준</div></div><div class="seg" style="min-width:150px">${[15, 30, 60].map(n => `<button data-goal="${n}" aria-pressed="${S.goal === n}">${n}</button>`).join('')}</div></div>
     <div class="switch"><div><b>학습 기록 지우기</b><div class="small muted">익힌 글자, 오답 노트, 연속 학습일이 모두 사라집니다.</div></div><span id="reset-box"><button class="btn sm quiet" style="width:auto;height:36px;border-radius:10px" data-go="reset1">지우기</button></span></div></div>
   <div class="card credits"><h3>자료 출처</h3>
@@ -1485,8 +1651,12 @@ document.addEventListener('click', e => {
   if (d.grade) { V.grade = +d.grade; $('#dict-res').innerHTML = dictResults(st); return; }
   if (d.goal) { S.goal = +d.goal; touch('meta'); return render(); }
   switch (d.go) {
-    case 'today': openStart(); break;
-    case 'start': { const n = M.n; S.todayN = n; saveLocal(); closeStart(); startSession('today', buildToday(st, n), { again: () => startSession('today', buildToday(stageOf(S.stage), n), {}) }); break; }
+    case 'today': openStart('hun'); break;
+    case 'start': { const n = M.n, kind = M.kind; S.todayN = n; saveLocal(); closeStart(); clearSession(); startSession('today', buildToday(st, n, kind), { kind, again: () => startSession('today', buildToday(stageOf(S.stage), n, kind), { kind }) }); break; }
+    case 'todaywrite': openStart('write'); break;
+    case 'resume': if (!resumeSession()) { toast('이어서 할 학습이 없습니다'); render(); } break;
+    case 'gotoread': setTab('read'); break;
+    case 'gotodict': setTab('dict'); break;
     case 'closestart': closeStart(); break;
     case 'stepup': M.n = Math.min(40, M.n + 5); renderStart(); break;
     case 'stepdown': M.n = Math.max(5, M.n - 5); renderStart(); break;
@@ -1520,5 +1690,20 @@ document.addEventListener('input', e => {
 /* ============ boot ============ */
 loadLocal();
 loadData().then(() => { render(); initCloud(); fetch('data/illu.json').then(r => r.ok ? r.json() : null).then(j => { if (j) { D.illu = j; fillIllu(); } }).catch(() => {}); }).catch(err => { $('#view').innerHTML = `<div class="loading">자료를 불러오지 못했습니다. 새로 고침해 주세요.<br><span class="small">${esc(err.message)}</span></div>`; });
+
+/* 90-day history: stacked bars (new / known at first sight / review) with review accuracy line */
+function histChart() {
+  const N = 90, days = []; const d = new Date(); d.setDate(d.getDate() - (N - 1));
+  for (let i = 0; i < N; i++) { const r = S.days[dayKey(d)] || [0, 0, 0, 0, 0, 0, 0]; days.push(r); d.setDate(d.getDate() + 1); }
+  const mx = Math.max(S.goal, ...days.map(r => r[0]));
+  let rn = 0, rok = 0; days.forEach(r => { rn += r[4] || 0; rok += r[5] || 0; });
+  const W = 360, H = 120, bw = W / N;
+  const bars = days.map((r, i) => { const x = i * bw; const nw = Math.max(0, (r[2] || 0) - (r[3] || 0)), kn = r[3] || 0, rv = r[4] || 0, other = Math.max(0, r[0] - nw - kn - rv); const segs = [[other, 'var(--line)'], [rv, 'var(--badge)'], [kn, '#9ED8F5'], [nw, '#F6C453']]; let y = H; return segs.map(([v, col]) => { if (!v) return ''; const h = H * v / mx; y -= h; return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${h.toFixed(1)}" fill="${col}"/>`; }).join(''); }).join('');
+  const pts = []; for (let i = 0; i < N; i++) { let a = 0, b = 0; for (let k = Math.max(0, i - 6); k <= i; k++) { a += days[k][5] || 0; b += days[k][4] || 0; } if (b) pts.push([(i + 0.35) * bw, H - H * a / b]); }
+  const line = pts.length > 1 ? `<polyline points="${pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="var(--indigo)" stroke-width="1.5"/>` : '';
+  const lab = (() => { const t = new Date(); t.setDate(t.getDate() - 45); return dayKey(t); })();
+  return `<div class="hist"><div class="row" style="justify-content:space-between;align-items:flex-start"><div class="info-legend"><span><i style="background:#F6C453"></i>새로 배운 글자: <b class="num">${days.reduce((s, r) => s + Math.max(0, (r[2] || 0) - (r[3] || 0)), 0)}</b></span><span><i style="background:#9ED8F5"></i>이미 아는 글자: <b class="num">${days.reduce((s, r) => s + (r[3] || 0), 0)}</b></span><span><i style="background:var(--badge)"></i>복습 글자: <b class="num">${rn}</b></span></div><div class="bigpct num"><span>복습 정답률</span>${rn ? Math.round(100 * rok / rn) : '—'}<small>%</small></div></div>
+  <svg viewBox="0 0 ${W} ${H + 2}" preserveAspectRatio="none" role="img" aria-label="최근 90일 학습량과 복습 정답률">${bars}${line}</svg><div class="row small muted" style="justify-content:space-between"><span>90일 전</span><span>${lab}</span><span>오늘</span></div></div>`;
+}
 
 </script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});</script></body></html>
