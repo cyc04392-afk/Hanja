@@ -561,7 +561,7 @@ function touch(...docs) { S.ts = Date.now(); saveLocal(); for (const d of docs) 
 function touchItem(key) { touch('it' + shardOf(key), 'meta'); }
 function scheduleCloud() { if (!cloud.on) return; clearTimeout(cloud.timer); cloud.timer = setTimeout(flushCloud, 3000); }
 function shardBody(n) { const m = {}; for (const k in S.items) if (shardOf(k) === n) m[k] = S.items[k]; return { v: JSON.stringify(m), ts: Date.now() }; }
-function metaBody() { return { v: JSON.stringify({ stage: S.stage, placed: S.placed, goal: S.goal, real: S.real, realv: S.realv, ruby: S.ruby, xp: S.xp, days: S.days, types: S.types, read: S.read, saved: S.saved, lv: S.lv, moreRev: S.moreRev, memo: S.memo }), ts: S.ts }; }
+function metaBody() { return { v: JSON.stringify({ stage: S.stage, placed: S.placed, goal: S.goal, real: S.real, realv: S.realv, ruby: S.ruby, xp: S.xp, days: S.days, types: S.types, read: S.read, saved: S.saved, lv: S.lv, nlv: S.nlv, moreRev: S.moreRev, memo: S.memo }), ts: S.ts }; }
 function docRef(name) { return cloud.db.doc('data/users/' + cloud.uid + '/' + name); }
 async function flushCloud() {
   if (!cloud.on || cloud.busy || !cloud.dirty.size) return;
@@ -601,7 +601,7 @@ async function initCloud() {
       if (!snap.exists) { if (name === 'meta' ? S.ts : name === 'wrong' ? S.wrong.length : Object.keys(S.items).some(k => 'it' + shardOf(k) === name)) cloud.dirty.add(name); return; }
       const body = snap.data(); let v; try { v = JSON.parse(body.v); } catch (e) { return; }
       if (name === 'meta') {
-        if ((body.ts || 0) > S.ts) { for (const k of ['stage', 'placed', 'goal', 'real', 'realv', 'ruby', 'types', 'read', 'saved', 'lv', 'moreRev', 'memo']) if (v[k] !== undefined) S[k] = v[k]; changed = true; } else if ((body.ts || 0) < S.ts) cloud.dirty.add('meta');
+        if ((body.ts || 0) > S.ts) { for (const k of ['stage', 'placed', 'goal', 'real', 'realv', 'ruby', 'types', 'read', 'saved', 'lv', 'nlv', 'moreRev', 'memo']) if (v[k] !== undefined) S[k] = v[k]; changed = true; } else if ((body.ts || 0) < S.ts) cloud.dirty.add('meta');
         S.xp = Math.max(S.xp, v.xp || 0);
         for (const d in (v.days || {})) { const a = S.days[d], b = v.days[d]; if (!a || b[0] > a[0]) { S.days[d] = b; changed = true; } }
       } else if (name === 'wrong') {
@@ -646,10 +646,16 @@ function recordAnswer(q, ok, hinted) {
       it[2]++;
     } else { it[0] = 1; it[3]++; }                 // 틀리면 (오래전에 익힌 글자라도) 내일 다시
     it[1] = now + IV[it[0]]; it[4] = now; it[5] = Math.max(it[5] || 0, it[0]); S.items[key] = it; cloud.dirty.add('it' + shardOf(key));
-    // 나의 한자력 레벨: 처음 보는 글자를 맞히면 그 글자 레벨 쪽으로, 틀리면 아래로
+    // 나의 한자력 레벨: 처음 보는 글자를 맞히면 그 글자 레벨 쪽으로, 틀리면 아래로.
+    // 처음 100글자 동안은 폭을 크게 잡아(최대 6배) 실력이 빨리 자리 잡게 한다. 힌트 없이 5연속 맞히면 보너스.
     if (key[0] === 'c' && !was && Q.mode !== 'level') {
-      const cl = charLv(key.slice(1)), lv = userLv();
-      S.lv = Math.max(1, Math.min(30, ok ? lv + (hinted ? 0.05 : 0.12 + Math.max(0, cl - lv) * 0.06) : lv - 0.25 - Math.max(0, lv - cl) * 0.1));
+      const cl = charLv(key.slice(1)), lv = userLv(); const n = (S.nlv = (S.nlv || 0) + 1);
+      const early = n <= 100 ? 1 + 5 * (1 - n / 100) : 1;
+      if (ok && !hinted) { S.lvs = (S.lvs || 0) + 1; } else S.lvs = 0;
+      let d;
+      if (ok) { d = (hinted ? 0.05 : 0.14 + Math.max(0, cl - lv) * 0.08) * early; if (S.lvs >= 5) { d += 0.5 * early; S.lvs = 0; } }
+      else d = -(0.25 + Math.max(0, lv - cl) * 0.1) * Math.min(early, 2.5);
+      S.lv = Math.max(1, Math.min(30, lv + d));
     }
   }
   const dk = dayKey(); const d = S.days[dk] || [0, 0]; while (d.length < 7) d.push(0); d[0]++; if (ok) d[1]++;
@@ -680,11 +686,12 @@ function dueKeys(st) {
 }
 /* unseen characters near the learner's level, easiest-first within the band */
 function pickNew(st, n, exclude) {
-  const lv = userLv(); const pool = stageChars(st).filter(x => !S.items['c' + x.c] && !(exclude && exclude.has(x.c)));
+  const lv = userLv(); const up = (S.nlv || 0) < 100 ? 3.5 : 2.5;
+  const pool = stageChars(st).filter(x => !S.items['c' + x.c] && !(exclude && exclude.has(x.c)));
   if (!pool.length) return [];
-  const band = pool.filter(x => x.l >= lv - 1 && x.l <= lv + 2);
+  const band = pool.filter(x => x.l >= lv - 0.5 && x.l <= lv + up);
   const rest = pool.filter(x => !band.includes(x)).sort((a, b) => Math.abs(a.l - lv) - Math.abs(b.l - lv));
-  return shuffle(band).sort((a, b) => a.l - b.l).concat(rest).slice(0, n);
+  return shuffle(band).sort((a, b) => Math.abs(a.l - (lv + 1)) - Math.abs(b.l - (lv + 1))).concat(rest).slice(0, n);
 }
 function mastery(x) { const b = boxOf('c' + x.c); return b >= 4 ? 2 : b >= 0 ? 1 : 0; }
 
@@ -1095,7 +1102,7 @@ function renderQ() {
   const g = D.gmax((q.chars || []).join('')); const tag = seenTag(q); const saved = savedIdx(q.id) >= 0;
   const ql = Math.max(0, ...(q.chars || []).map(c => charLv(c))); const meta = `<div class="q-meta"><span class="lv">레벨 ${ql || '—'}${g < 99 ? ' · ' + GR[g] : ''}</span><span class="grow"></span>${Q.mode === 'mock' ? '' : `<span class="tag ${tag[0]}">${tag[1]}</span>`}<button class="heart${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}" aria-label="저장">${saved ? '♥' : '♡'}</button></div>`;
   const inline = q.mode === 'text' || q.mode === 'self';   // typed answers: buttons sit right under the input so the keyboard never covers them
-  $('#session').innerHTML = head + `<div class="q-body"><div class="q-kind"><span class="stamp ghost">${TYPES[q.type].h}</span>${esc(TYPES[q.type].n)} · ${esc(q.title)}</div><div class="q-stem">${meta}${q.stem}<div id="q-hint"></div></div>${input}${inline ? '<div class="q-foot inline"><div id="q-foot"></div></div>' : ''}<div id="q-fb"></div></div>${inline ? '' : '<div class="q-foot"><div id="q-foot"></div></div>'}`;
+  $('#session').innerHTML = head + `<div class="q-body"><div class="q-kind"><span class="stamp ghost">${TYPES[q.type].h}</span>${esc(TYPES[q.type].n)} · ${esc(q.title)}</div><div class="q-stem">${meta}${q.stem}<div id="q-hint"></div></div>${input}${inline ? '<div class="q-foot inline" id="qf-in"></div>' : ''}<div id="q-fb"></div></div><div class="q-foot" id="qf-bot"${inline ? ' hidden' : ''}><div id="q-foot"></div></div>`;
   Q.hinted = false;
   if (q.mode === 'write') startFreeMode();
   footer();
@@ -1104,7 +1111,13 @@ function renderQ() {
   $('.q-body').scrollTop = 0;
 }
 function footer() {
-  const q = Q.q, f = $('#q-foot'); let h = '';
+  const q = Q.q; let h = '';
+  // typed questions: buttons under the input while answering; once answered the keyboard is gone, so 다음 goes to the bottom
+  const inline = (q.mode === 'text' || q.mode === 'self') && Q.state !== 'done';
+  const fin = $('#qf-in'), fbot = $('#qf-bot');
+  if (fin) { fin.innerHTML = inline ? '<div id="q-foot"></div>' : ''; }
+  if (fbot) { fbot.hidden = inline; if (!inline && !fbot.querySelector('#q-foot')) fbot.innerHTML = '<div id="q-foot"></div>'; if (inline) fbot.innerHTML = '<div></div>'; }
+  const f = $('#q-foot');
   if (Q.state === 'ask') {
     h = `<button class="btn quiet" data-act="dunno" style="flex:0 0 auto">모르겠어요</button>` + (q.hint && Q.mode !== 'mock' && !Q.hinted ? `<button class="btn quiet" data-act="hint" style="flex:0 0 auto;color:var(--indigo)">힌트</button>` : '');
     if (q.mode === 'text') h += `<button class="btn" data-act="primary">확인</button>`;
