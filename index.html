@@ -426,6 +426,8 @@ h3{font-size:14px;font-weight:700;color:var(--ink)}
 .ivs.sheet{margin-top:8px}
 .iv{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
 .iv.on{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.q-foot.inline{background:transparent;padding:0;border:0}
+.q-foot.inline > div{max-width:none}
 body{-webkit-user-select:none;user-select:none;overscroll-behavior:none}input{-webkit-user-select:text;user-select:text}</style></head><body><div id="app">
   <header class="top">
     <div class="brand"><b>먹빛 한자</b></div>
@@ -1092,7 +1094,8 @@ function renderQ() {
   }
   const g = D.gmax((q.chars || []).join('')); const tag = seenTag(q); const saved = savedIdx(q.id) >= 0;
   const ql = Math.max(0, ...(q.chars || []).map(c => charLv(c))); const meta = `<div class="q-meta"><span class="lv">레벨 ${ql || '—'}${g < 99 ? ' · ' + GR[g] : ''}</span><span class="grow"></span>${Q.mode === 'mock' ? '' : `<span class="tag ${tag[0]}">${tag[1]}</span>`}<button class="heart${saved ? ' on' : ''}" data-act="save" aria-pressed="${saved}" aria-label="저장">${saved ? '♥' : '♡'}</button></div>`;
-  $('#session').innerHTML = head + `<div class="q-body"><div class="q-kind"><span class="stamp ghost">${TYPES[q.type].h}</span>${esc(TYPES[q.type].n)} · ${esc(q.title)}</div><div class="q-stem">${meta}${q.stem}<div id="q-hint"></div></div>${input}<div id="q-fb"></div></div><div class="q-foot"><div id="q-foot"></div></div>`;
+  const inline = q.mode === 'text' || q.mode === 'self';   // typed answers: buttons sit right under the input so the keyboard never covers them
+  $('#session').innerHTML = head + `<div class="q-body"><div class="q-kind"><span class="stamp ghost">${TYPES[q.type].h}</span>${esc(TYPES[q.type].n)} · ${esc(q.title)}</div><div class="q-stem">${meta}${q.stem}<div id="q-hint"></div></div>${input}${inline ? '<div class="q-foot inline"><div id="q-foot"></div></div>' : ''}<div id="q-fb"></div></div>${inline ? '' : '<div class="q-foot"><div id="q-foot"></div></div>'}`;
   Q.hinted = false;
   if (q.mode === 'write') startFreeMode();
   footer();
