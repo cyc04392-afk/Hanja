@@ -995,8 +995,12 @@ function qForChar(x, st, kind) {
 }
 /* today's set. Before the daily goal: 80% new / 20% review. After it: 80% review / 20% new.
    Reviews are the fragile ones first; new characters sit near my level. */
-function todayMix(st, n) {
+function todayMix(st, n, kind) {
   const dueAll = dueKeys(st); const after = todayRec()[0] >= S.goal;
+  if (kind === 'write') {   // 한자 쓰기: 이미 접한 글자만. 복습 차례인 것 먼저, 그다음 기억이 약하고 오래된 것부터
+    const seen = stageChars(st).filter(x => S.items['c' + x.c] && !dueAll.includes(x)).sort((a, b) => { const p = S.items['c' + a.c], q = S.items['c' + b.c]; return (p[0] - q[0]) || (p[4] - q[4]); });
+    const due = dueAll.slice(0, n); return { due, fresh: seen.slice(0, n - due.length), dueAll, after, seenN: seen.length + dueAll.length };
+  }
   const wantRev = Math.round(n * (after ? 0.8 : 0.2));
   let due = dueAll.slice(0, Math.min(dueAll.length, wantRev));
   let fresh = pickNew(st, n - due.length);
@@ -1004,9 +1008,10 @@ function todayMix(st, n) {
   return { due, fresh, dueAll, after };
 }
 function buildToday(st, n = 15, kind) {
-  const { due, fresh } = todayMix(st, n);
+  const { due, fresh } = todayMix(st, n, kind);
+  if (kind === 'write' && !due.length && !fresh.length) return [];
   let targets = [...due, ...fresh];
-  if (targets.length < n) { const weak = stageChars(st).filter(x => !targets.includes(x) && S.items['c' + x.c]).sort((a, b) => boxOf('c' + a.c) - boxOf('c' + b.c)); targets = targets.concat(shuffle(weak.slice(0, 40)).slice(0, n - targets.length)); }
+  if (targets.length < n && kind !== 'write') { const weak = stageChars(st).filter(x => !targets.includes(x) && S.items['c' + x.c]).sort((a, b) => boxOf('c' + a.c) - boxOf('c' + b.c)); targets = targets.concat(shuffle(weak.slice(0, 40)).slice(0, n - targets.length)); }
   const qs = targets.map(x => qForChar(x, st, kind));
   const a = qs.slice(0, due.length), b = qs.slice(due.length), out = [];
   while (a.length || b.length) { if (a.length) out.push(a.shift()); if (b.length) out.push(b.shift()); if (b.length && b.length > a.length) out.push(b.shift()); }
@@ -1067,7 +1072,7 @@ function resumeSession() {
   renderQ(); return true;
 }
 function startSession(mode, qs, opts = {}) {
-  if (!qs || !qs.length) { toast('이 범위에서는 낼 문제가 없습니다'); return; }
+  if (!qs || !qs.length) { toast(opts.kind === 'write' ? '아직 접한 글자가 없습니다. 훈음 학습을 먼저 해 보세요.' : '이 범위에서는 낼 문제가 없습니다'); return; }
   Object.assign(Q, { on: true, mode, kind: opts.kind || '', list: qs.slice(), i: 0, right: 0, total: 0, combo: 0, best: 0, wrong: [], byType: {}, xp0: S.xp, opts, t0: Date.now(), lastAt: Date.now(), state: 'ask', gen: opts.gen || null, pads: [], writers: [] });
   if (!opts.gen && mode !== 'level' && mode !== 'mock') saveSession();
   $('#session').hidden = false; document.body.style.overflow = 'hidden';
@@ -1429,7 +1434,7 @@ function openStart(kind) { M.kind = kind || 'hun'; M.n = S.todayN || 15; $('#mod
 function closeStart() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
 function renderStart() {
   const st = stageOf(S.stage); const pr = stageProgress(st); const today = (S.days[dayKey()] || [0, 0]);
-  const mix = todayMix(st, M.n); const due = mix.due.length, fresh = mix.fresh.length;
+  const mix = todayMix(st, M.n, M.kind); const due = mix.due.length, fresh = mix.fresh.length;
   const p = Math.min(1, today[0] / S.goal); const R = 96, C0 = 2 * Math.PI * R, A = C0 * 0.72;
   $('#modal').innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="오늘의 한자 학습">
     <div class="modal-h">${IC.bell}${M.kind === 'write' ? '오늘의 한자 쓰기' : '오늘의 훈음 학습'}<button class="iconbtn" data-go="closestart" aria-label="닫기">✕</button></div>
@@ -1437,7 +1442,7 @@ function renderStart() {
       <div class="course"><div class="row"><span class="grow">${st.id} 배정한자 ${st.n.toLocaleString()}자</span><small class="num">완료율 ${Math.round(100 * pr.m / pr.n)}%</small></div><div class="bar"><i style="width:${100 * pr.m / pr.n}%"></i></div>
         <div class="seg" style="margin-top:6px">${STAGES.map(s => `<button data-stage="${s.id}" aria-pressed="${s.id === st.id}">${s.id}</button>`).join('')}</div></div>
       <div class="arc"><svg class="a" viewBox="0 0 220 190" aria-hidden="true"><g transform="rotate(140 110 106)"><circle cx="110" cy="106" r="${R}" fill="none" stroke="var(--sunk)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${A} ${C0}"/><circle cx="110" cy="106" r="${R}" fill="none" stroke="var(--seal)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${Math.max(0.01, A * p)} ${C0}"/></g></svg>
-        <div class="mid">새로운 글자: <b class="num">${fresh}</b><br>복습할 글자: <b class="num">${due}</b><br><small class="muted" style="font-weight:600">${mix.after ? '목표 달성 후 · 복습 80%' : '새 글자 80% · 복습 20%'} · 내 레벨 ${userLv().toFixed(1)}</small></div>${mascot('mascot')}<div class="of num"><b>${today[0]}</b>/${S.goal}</div></div>
+        <div class="mid">${M.kind === 'write' ? `복습할 글자: <b class="num">${due}</b><br>다시 써 볼 글자: <b class="num">${fresh}</b><br><small class="muted" style="font-weight:600">접한 글자 ${mix.seenN}자 중에서만</small>` : `새로운 글자: <b class="num">${fresh}</b><br>복습할 글자: <b class="num">${due}</b><br><small class="muted" style="font-weight:600">${mix.after ? '목표 달성 후 · 복습 80%' : '새 글자 80% · 복습 20%'} · 내 레벨 ${userLv().toFixed(1)}</small>`}</div>${mascot('mascot')}<div class="of num"><b>${today[0]}</b>/${S.goal}</div></div>
       <div class="go"><div class="stepper"><button data-go="stepup" aria-label="문제 수 늘리기"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M10 0l10 10H0z" fill="currentColor"/></svg></button><div class="num">${M.n}<small>문제</small></div><button data-go="stepdown" aria-label="문제 수 줄이기"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M10 10L0 0h20z" fill="currentColor"/></svg></button></div>
         <button class="btn" data-go="start">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '학습 시작'}</button></div>
     </div></div>`;
