@@ -428,6 +428,9 @@ h3{font-size:14px;font-weight:700;color:var(--ink)}
 .iv.on{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
 .q-foot.inline{background:transparent;padding:0;border:0}
 .q-foot.inline > div{max-width:none}
+.ladder{display:grid;grid-template-columns:repeat(30,1fr);gap:2px;align-items:end;height:52px}
+.ladder div{display:grid;justify-items:center;align-content:end;height:100%;font-size:9px;color:var(--ink-3);gap:2px}
+.ladder i{display:block;width:100%;background:var(--indigo);border-radius:2px 2px 0 0}
 body{-webkit-user-select:none;user-select:none;overscroll-behavior:none}input{-webkit-user-select:text;user-select:text}</style></head><body><div id="app">
   <header class="top">
     <div class="brand"><b>먹빛 한자</b></div>
@@ -632,7 +635,21 @@ const gradeOfLv = lv => { for (let g = GRADE_LV.length - 1; g >= 0; g--) if (lv 
 function item(key) { return S.items[key]; }
 function boxOf(key) { const it = S.items[key]; return it ? it[0] : -1; }
 function charLv(c) { const x = D.C.get(c); return x ? x.l : 0; }
-function userLv() { return Math.max(1, Math.min(30, S.lv || 1)); }
+function userLv() { return Math.max(0, Math.min(30, S.lv || 0)); }
+/* 나의 한자력 레벨 = 각 레벨에서 익힌 글자(숙달 단계 이상)가 기준치에 얼마나 찼는지를 1~30 레벨에 걸쳐 더한 값.
+   레벨마다 12자(그 레벨 글자가 12자보다 적으면 전부)를 익히면 한 레벨이 찬다. 틀려서 숙달이 풀리면 그만큼 내려간다. */
+const LV_NEED = 10;
+function lvTable() {
+  const known = new Array(31).fill(0), cnt = new Array(31).fill(0), seen = new Array(31).fill(0);
+  for (const x of D.chars) { cnt[x.l]++; const it = S.items['c' + x.c]; if (it) { seen[x.l]++; if (it[0] >= 4) known[x.l]++; } }
+  return { known, cnt, seen, need: cnt.map(c => Math.min(c, LV_NEED)) };
+}
+function computeLv() {
+  if (!D.ready) return S.lv || 0;
+  const t = lvTable(); let lv = 0;
+  for (let l = 1; l <= 30; l++) lv += t.need[l] ? Math.min(1, t.known[l] / t.need[l]) : 0;
+  return Math.round(Math.max(0, Math.min(30, lv)) * 10) / 10;
+}
 function recordAnswer(q, ok, hinted) {
   const now = nowMin();
   q.wasNew = !S.items[q.keys[0]];
@@ -646,18 +663,8 @@ function recordAnswer(q, ok, hinted) {
       it[2]++;
     } else { it[0] = 1; it[3]++; }                 // 틀리면 (오래전에 익힌 글자라도) 내일 다시
     it[1] = now + IV[it[0]]; it[4] = now; it[5] = Math.max(it[5] || 0, it[0]); S.items[key] = it; cloud.dirty.add('it' + shardOf(key));
-    // 나의 한자력 레벨: 처음 보는 글자를 맞히면 그 글자 레벨 쪽으로, 틀리면 아래로.
-    // 처음 100글자 동안은 폭을 크게 잡아(최대 6배) 실력이 빨리 자리 잡게 한다. 힌트 없이 5연속 맞히면 보너스.
-    if (key[0] === 'c' && !was && Q.mode !== 'level') {
-      const cl = charLv(key.slice(1)), lv = userLv(); const n = (S.nlv = (S.nlv || 0) + 1);
-      const early = n <= 100 ? 1 + 5 * (1 - n / 100) : 1;
-      if (ok && !hinted) { S.lvs = (S.lvs || 0) + 1; } else S.lvs = 0;
-      let d;
-      if (ok) { d = (hinted ? 0.05 : 0.14 + Math.max(0, cl - lv) * 0.08) * early; if (S.lvs >= 5) { d += 0.5 * early; S.lvs = 0; } }
-      else d = -(0.25 + Math.max(0, lv - cl) * 0.1) * Math.min(early, 2.5);
-      S.lv = Math.max(1, Math.min(30, lv + d));
-    }
   }
+  S.lv = computeLv();
   const dk = dayKey(); const d = S.days[dk] || [0, 0]; while (d.length < 7) d.push(0); d[0]++; if (ok) d[1]++;
   if (q.keys[0][0] === 'c') { if (q.wasNew) { d[2]++; if (ok && !hinted) d[3]++; } else { d[4]++; if (ok) d[5]++; } }
   const tnow = Date.now(); if (Q.lastAt) d[6] += Math.min(60, Math.round((tnow - Q.lastAt) / 1000)); Q.lastAt = tnow; S.days[dk] = d;
@@ -685,13 +692,24 @@ function dueKeys(st) {
   return out;
 }
 /* unseen characters near the learner's level, easiest-first within the band */
+/* unseen characters for today: drawn from the first unfilled levels (the one just above my level and the three after it),
+   lower levels more often, so each level fills in turn and the level climbs as fast as you actually know the characters */
 function pickNew(st, n, exclude) {
-  const lv = userLv(); const up = (S.nlv || 0) < 100 ? 3.5 : 2.5;
-  const pool = stageChars(st).filter(x => !S.items['c' + x.c] && !(exclude && exclude.has(x.c)));
-  if (!pool.length) return [];
-  const band = pool.filter(x => x.l >= lv - 0.5 && x.l <= lv + up);
-  const rest = pool.filter(x => !band.includes(x)).sort((a, b) => Math.abs(a.l - lv) - Math.abs(b.l - lv));
-  return shuffle(band).sort((a, b) => Math.abs(a.l - (lv + 1)) - Math.abs(b.l - (lv + 1))).concat(rest).slice(0, n);
+  const t = lvTable(); const pool = {};
+  for (const x of stageChars(st)) if (!S.items['c' + x.c] && !(exclude && exclude.has(x.c))) (pool[x.l] = pool[x.l] || []).push(x);
+  for (const l in pool) pool[l] = shuffle(pool[l]);
+  let base = 1; while (base < 30 && t.need[base] && t.known[base] >= t.need[base]) base++;   // first level not yet filled
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    const cands = []; let L = base, w = 4;
+    while (cands.length < 4 && L <= 30) { if ((pool[L] || []).length && !(t.need[L] && t.known[L] >= t.need[L])) cands.push([L, w]); L++; if (cands.length) w = Math.max(1, w - 1); }
+    if (!cands.length) { for (let M = base - 1; M >= 1 && !cands.length; M--) if ((pool[M] || []).length) cands.push([M, 1]); }
+    if (!cands.length) break;
+    let tot = cands.reduce((s, c) => s + c[1], 0), r = Math.random() * tot, lvl = cands[cands.length - 1][0];
+    for (const [l, ww] of cands) { r -= ww; if (r <= 0) { lvl = l; break; } }
+    out.push(pool[lvl].pop());
+  }
+  return out;
 }
 function mastery(x) { const b = boxOf('c' + x.c); return b >= 4 ? 2 : b >= 0 ? 1 : 0; }
 
@@ -727,7 +745,7 @@ function intervalChips(keys, cls) {
 }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-iv]'); if (!t) return;
-  const keys = t.dataset.ivkeys.split(','); keys.forEach(k => setInterval_(k, +t.dataset.iv));
+  const keys = t.dataset.ivkeys.split(','); keys.forEach(k => setInterval_(k, +t.dataset.iv)); S.lv = computeLv();
   t.parentNode.querySelectorAll('.iv').forEach(b => b.classList.toggle('on', b === t));
   toast(t.textContent === '끝' ? '복습 목록에서 뺐습니다' : '다음 복습을 ' + t.textContent + ' 뒤로 정했습니다');
   if (Q.on && Q.q) { const idx = Q.list.findIndex((r, k) => k > Q.i && r.retry && r.id === Q.q.id); if (idx > 0) Q.list.splice(idx, 1); }   // 직접 정했으면 이번 학습에서 또 묻지 않음
@@ -1311,9 +1329,9 @@ function startLevelTest() {
 }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-lv]'); if (!t || !Q.level) return; const { rec, known } = Q.level;
-  if (t.dataset.lv === 'known') { const now = nowMin(); for (const x of known) if (!S.items['c' + x.c]) { S.items['c' + x.c] = [5, now + IV[5], 1, 0, now, 5]; cloud.dirty.add('it' + shardOf('c' + x.c)); } touch('meta'); t.parentNode.innerHTML = `<span class="small" style="color:var(--ok);font-weight:600">${known.length}자를 아는 글자로 표시했습니다</span>`; }
+  if (t.dataset.lv === 'known') { const now = nowMin(); for (const x of known) if (!S.items['c' + x.c]) { S.items['c' + x.c] = [5, now + IV[5], 1, 0, now, 5]; cloud.dirty.add('it' + shardOf('c' + x.c)); } S.lv = computeLv(); touch('meta'); t.parentNode.innerHTML = `<span class="small" style="color:var(--ok);font-weight:600">${known.length}자를 아는 글자로 표시했습니다</span>`; }
   else if (t.dataset.lv === 'keep') t.closest('.card').remove();
-  else if (t.dataset.lv === 'apply') { S.stage = rec.id; S.placed = true; S.lv = lvOfGrade(Q.level.est); touch('meta'); Q.level = null; endSession(); }
+  else if (t.dataset.lv === 'apply') { S.stage = rec.id; S.placed = true; S.lv = computeLv(); touch('meta'); Q.level = null; endSession(); }
 });
 
 function memoNote(q) { const c = (q.chars || []).find(c => S.memo[c]); return c ? `<div class="memo-note"><span class="badge">내 메모 · ${c}</span>${esc(S.memo[c])}</div>` : ''; }
@@ -1391,7 +1409,7 @@ function viewHome(st) {
       <div class="row" style="align-items:flex-end;gap:8px"><div class="grow"><h1>한자 학습</h1><label class="pick">하루 목표 <select id="sel-goal" aria-label="하루 목표">${[15, 30, 45, 60, 80].map(n => `<option value="${n}"${S.goal === n ? ' selected' : ''}>${n}개</option>`).join('')}</select><span class="muted">·</span><select id="sel-stage" aria-label="목표 급수">${STAGES.map(s => `<option value="${s.id}"${s.id === st.id ? ' selected' : ''}>${s.id}</option>`).join('')}</select></label></div>
       <div class="pct"><svg viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="31" fill="none" stroke="var(--surface)" stroke-width="5"/><circle cx="35" cy="35" r="31" fill="none" stroke="var(--indigo)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C0}" stroke-dashoffset="${C0 * (1 - Math.min(1, pct / 100))}"/></svg><b class="num">${pct}<small>%</small></b></div></div></div>
   </section>
-  ${(() => { const i = STAGES.indexOf(st); const nx = STAGES[i + 1]; if (!nx || !S.lv) return ''; const top = GRADE_LV[st.max][1]; const learned = stageChars(st).filter(x => S.items['c' + x.c]).length; return (userLv() >= top - 0.5 || learned >= st.n * 0.9) ? `<div class="banner" style="margin:10px 0 0"><p><b>${st.id} 범위를 거의 다 봤어요</b><br><span class="small">목표를 ${nx.id}(${nx.n.toLocaleString()}자)으로 올리면 더 어려운 글자가 나옵니다. 지금까지 기록은 그대로 이어집니다.</span></p><button class="btn sm" data-stage="${nx.id}">${nx.id}으로</button></div>` : ''; })()}
+  ${(() => { const i = STAGES.indexOf(st); const nx = STAGES[i + 1]; if (!nx) return ''; const top = GRADE_LV[st.max][1]; const learned = stageChars(st).filter(x => S.items['c' + x.c]).length; return (userLv() >= top - 0.5 || learned >= st.n * 0.9) ? `<div class="banner" style="margin:10px 0 0"><p><b>${st.id} 범위를 거의 다 봤어요</b><br><span class="small">목표를 ${nx.id}(${nx.n.toLocaleString()}자)으로 올리면 더 어려운 글자가 나옵니다. 지금까지 기록은 그대로 이어집니다.</span></p><button class="btn sm" data-stage="${nx.id}">${nx.id}으로</button></div>` : ''; })()}
   <div class="cta">${sess ? `<button class="btn" data-go="resume">▶ 이어서 하기 <span class="num" style="font-weight:600;opacity:.85">${sess.i}/${sess.list.length}</span></button><button class="btn ghost" data-go="${sess.kind === 'write' ? 'todaywrite' : 'today'}" style="width:auto;min-height:56px">새로</button>` : `<button class="btn" data-go="today">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '오늘의 학습'}</button>`}</div>
   <div style="height:14px"></div>
   <button class="hrow" data-nav="stats" style="border-top:0"><div><h3>학습 정보</h3><div class="info-legend"><span><i style="background:var(--badge)"></i>오늘 푼 문제: <b class="num">${today[0]}</b></span><span><i style="background:var(--indigo)"></i>오늘 맞힌 문제: <b class="num">${today[1]}</b></span><span><i style="background:var(--seal)"></i>복습할 글자: <b class="num">${due}</b></span></div></div>
@@ -1649,7 +1667,8 @@ function viewStats(st) {
   <div class="card stack" style="gap:12px"><h2 style="text-align:center">한자 학습 정보</h2>
     <div class="stat4"><div><span class="k">${IC.trophy}연속 학습</span><b class="num">${streak()}일</b></div><div><span class="k">${IC.star}총 학습 문제</span><b class="num">${totN.toLocaleString()}</b></div><div><span class="k"><i class="dotc" style="background:var(--ok)"></i>오늘 학습 시간</span><b class="num">${fmtSecs(td[6])}</b></div><div><span class="k"><i class="dotc" style="background:var(--seal)"></i>총 학습 시간</span><b class="num">${fmtSecs(totS)}</b></div></div>
     ${histChart()}</div>
-  <div class="card stack" style="gap:10px"><h2>나의 한자력 레벨</h2><div class="row"><b class="num" style="font-size:28px;font-weight:800;color:var(--indigo)">${S.lv ? userLv().toFixed(1) : '—'}</b><div class="grow small muted">${S.lv ? GR[gradeOfLv(userLv())] + ' 배정한자 수준. 처음 보는 글자를 맞히면 오르고 틀리면 내려갑니다. 새 글자는 내 레벨 근처에서 고릅니다.' : '레벨 테스트를 하거나 학습을 시작하면 매겨집니다.'}</div></div><div class="bar"><i style="width:${S.lv ? userLv() / 30 * 100 : 0}%"></i></div></div>
+  <div class="card stack" style="gap:10px"><h2>나의 한자력 레벨</h2><div class="row"><b class="num" style="font-size:28px;font-weight:800;color:var(--indigo)">${S.lv ? userLv().toFixed(1) : '—'}</b><div class="grow small muted">${S.lv ? GR[gradeOfLv(userLv())] + ' 배정한자 수준. 레벨마다 글자 ' + LV_NEED + '자를 익히면(숙달 단계 이상) 한 레벨이 찹니다. 틀려서 숙달이 풀리면 그만큼 내려갑니다.' : '학습을 시작하면 매겨집니다. 레벨 테스트를 보면 아는 급수를 한 번에 채울 수 있습니다.'}</div></div><div class="bar"><i style="width:${S.lv ? userLv() / 30 * 100 : 0}%"></i></div>
+    ${lvLadder()}</div>
   <div class="card stack" style="gap:10px"><h2>${st.id} 예상 점수</h2>${est == null ? '<p class="small muted">유형별로 세 문제 이상씩 풀면, 내 정답률에 실제 배점을 곱해 예상 점수를 냅니다.</p>' : `<div class="row"><span class="stamp lg">${est >= st.pass ? '合' : '否'}</span><div class="grow"><b class="num" style="font-size:24px">${est}점</b> <span class="muted">/ ${st.total}점 · 합격선 ${st.pass}점</span></div></div>`}
     <div class="scroll-x"><table class="tbl"><tr><th>유형</th><th>시험 문항</th><th>맞음 / 푼 문제</th><th>정답률</th></tr>${trs}</table></div></div>
   <div class="card stack" style="gap:10px"><h2>최근 7일</h2><div class="days">${days.map(([n, c]) => `<div><span class="num">${c || ''}</span><i class="${c ? '' : 'z'}" style="height:${Math.round(60 * c / mx)}px"></i>${n}</div>`).join('')}</div></div>
@@ -1741,7 +1760,7 @@ document.addEventListener('input', e => {
 
 /* ============ boot ============ */
 loadLocal();
-loadData().then(() => { render(); initCloud(); fetch('data/illu.json').then(r => r.ok ? r.json() : null).then(j => { if (j) { D.illu = j; fillIllu(); } }).catch(() => {}); }).catch(err => { $('#view').innerHTML = `<div class="loading">자료를 불러오지 못했습니다. 새로 고침해 주세요.<br><span class="small">${esc(err.message)}</span></div>`; });
+loadData().then(() => { S.lv = computeLv(); render(); initCloud(); fetch('data/illu.json').then(r => r.ok ? r.json() : null).then(j => { if (j) { D.illu = j; fillIllu(); } }).catch(() => {}); }).catch(err => { $('#view').innerHTML = `<div class="loading">자료를 불러오지 못했습니다. 새로 고침해 주세요.<br><span class="small">${esc(err.message)}</span></div>`; });
 
 /* 90-day history: stacked bars (new / known at first sight / review) with review accuracy line */
 function histChart() {
@@ -1756,6 +1775,11 @@ function histChart() {
   const lab = (() => { const t = new Date(); t.setDate(t.getDate() - 45); return dayKey(t); })();
   return `<div class="hist"><div class="row" style="justify-content:space-between;align-items:flex-start"><div class="info-legend"><span><i style="background:#F6C453"></i>새로 배운 글자: <b class="num">${days.reduce((s, r) => s + Math.max(0, (r[2] || 0) - (r[3] || 0)), 0)}</b></span><span><i style="background:#9ED8F5"></i>이미 아는 글자: <b class="num">${days.reduce((s, r) => s + (r[3] || 0), 0)}</b></span><span><i style="background:var(--badge)"></i>복습 글자: <b class="num">${rn}</b></span></div><div class="bigpct num"><span>복습 정답률</span>${rn ? Math.round(100 * rok / rn) : '—'}<small>%</small></div></div>
   <svg viewBox="0 0 ${W} ${H + 2}" preserveAspectRatio="none" role="img" aria-label="최근 90일 학습량과 복습 정답률">${bars}${line}</svg><div class="row small muted" style="justify-content:space-between"><span>90일 전</span><span>${lab}</span><span>오늘</span></div></div>`;
+}
+
+function lvLadder() {
+  const t = lvTable();
+  return `<div class="ladder">${Array.from({ length: 30 }, (_, i) => { const l = i + 1, p = t.need[l] ? Math.min(1, t.known[l] / t.need[l]) : 0; return `<div title="레벨 ${l}: 익힌 ${t.known[l]} / 필요 ${t.need[l]} (본 글자 ${t.seen[l]})"><i style="height:${Math.round(4 + 36 * p)}px;opacity:${p ? 1 : .25}"></i>${l % 5 === 0 || l === 1 ? `<span>${l}</span>` : ''}</div>`; }).join('')}</div><p class="small muted">막대 하나가 레벨 하나. 가득 차면 그 레벨을 익힌 것입니다.</p>`;
 }
 
 </script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});</script></body></html>
