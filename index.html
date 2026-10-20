@@ -1219,7 +1219,8 @@ function finish(ok, skipped) {
   // 틀린 문제는 맞힐 때까지 이 학습 안에서 다시 나온다 (몇 문제 뒤에 끼워 넣음)
   if (!ok && (Q.mode === 'today' || Q.mode === 'type' || Q.mode === 'review')) {
     const r = Object.assign({}, q, { retry: true }); if (r.mode === 'choice') r.choices = shuffle(r.choices);
-    const at = Math.min(Q.list.length, Q.i + 3 + Math.floor(Math.random() * 3)); Q.list.splice(at, 0, r);
+    // 이번에 처음 본 글자는 맨 뒤로 보내고, 예전에 배웠던 글자의 복습은 몇 문제 뒤에 끼워 넣는다
+    const at = q.wasNew ? Q.list.length : Math.min(Q.list.length, Q.i + 3 + Math.floor(Math.random() * 3)); Q.list.splice(at, 0, r);
   }
   Q.combo = ok ? Q.combo + 1 : 0; Q.best = Math.max(Q.best, Q.combo);
   if (Q.opts.onAnswer) Q.opts.onAnswer(q, ok);
@@ -1390,6 +1391,7 @@ function viewHome(st) {
       <div class="row" style="align-items:flex-end;gap:8px"><div class="grow"><h1>한자 학습</h1><label class="pick">하루 목표 <select id="sel-goal" aria-label="하루 목표">${[15, 30, 45, 60, 80].map(n => `<option value="${n}"${S.goal === n ? ' selected' : ''}>${n}개</option>`).join('')}</select><span class="muted">·</span><select id="sel-stage" aria-label="목표 급수">${STAGES.map(s => `<option value="${s.id}"${s.id === st.id ? ' selected' : ''}>${s.id}</option>`).join('')}</select></label></div>
       <div class="pct"><svg viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="31" fill="none" stroke="var(--surface)" stroke-width="5"/><circle cx="35" cy="35" r="31" fill="none" stroke="var(--indigo)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C0}" stroke-dashoffset="${C0 * (1 - Math.min(1, pct / 100))}"/></svg><b class="num">${pct}<small>%</small></b></div></div></div>
   </section>
+  ${(() => { const i = STAGES.indexOf(st); const nx = STAGES[i + 1]; if (!nx || !S.lv) return ''; const top = GRADE_LV[st.max][1]; const learned = stageChars(st).filter(x => S.items['c' + x.c]).length; return (userLv() >= top - 0.5 || learned >= st.n * 0.9) ? `<div class="banner" style="margin:10px 0 0"><p><b>${st.id} 범위를 거의 다 봤어요</b><br><span class="small">목표를 ${nx.id}(${nx.n.toLocaleString()}자)으로 올리면 더 어려운 글자가 나옵니다. 지금까지 기록은 그대로 이어집니다.</span></p><button class="btn sm" data-stage="${nx.id}">${nx.id}으로</button></div>` : ''; })()}
   <div class="cta">${sess ? `<button class="btn" data-go="resume">▶ 이어서 하기 <span class="num" style="font-weight:600;opacity:.85">${sess.i}/${sess.list.length}</span></button><button class="btn ghost" data-go="${sess.kind === 'write' ? 'todaywrite' : 'today'}" style="width:auto;min-height:56px">새로</button>` : `<button class="btn" data-go="today">${today[0] >= S.goal ? IC.wstar + '추가 학습' : IC.book + '오늘의 학습'}</button>`}</div>
   <div style="height:14px"></div>
   <button class="hrow" data-nav="stats" style="border-top:0"><div><h3>학습 정보</h3><div class="info-legend"><span><i style="background:var(--badge)"></i>오늘 푼 문제: <b class="num">${today[0]}</b></span><span><i style="background:var(--indigo)"></i>오늘 맞힌 문제: <b class="num">${today[1]}</b></span><span><i style="background:var(--seal)"></i>복습할 글자: <b class="num">${due}</b></span></div></div>
