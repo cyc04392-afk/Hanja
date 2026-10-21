@@ -1237,8 +1237,7 @@ function finish(ok, skipped) {
   // 틀린 문제는 맞힐 때까지 이 학습 안에서 다시 나온다 (몇 문제 뒤에 끼워 넣음)
   if (!ok && (Q.mode === 'today' || Q.mode === 'type' || Q.mode === 'review')) {
     const r = Object.assign({}, q, { retry: true }); if (r.mode === 'choice') r.choices = shuffle(r.choices);
-    // 이번에 처음 본 글자는 맨 뒤로 보내고, 예전에 배웠던 글자의 복습은 몇 문제 뒤에 끼워 넣는다
-    const at = q.wasNew ? Q.list.length : Math.min(Q.list.length, Q.i + 3 + Math.floor(Math.random() * 3)); Q.list.splice(at, 0, r);
+    const at = Math.min(Q.list.length, Q.i + 3 + Math.floor(Math.random() * 3)); Q.list.splice(at, 0, r);   // 틀린 글자는 몇 문제 뒤에 다시
   }
   Q.combo = ok ? Q.combo + 1 : 0; Q.best = Math.max(Q.best, Q.combo);
   if (Q.opts.onAnswer) Q.opts.onAnswer(q, ok);
